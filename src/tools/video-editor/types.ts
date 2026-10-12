@@ -58,6 +58,7 @@ export interface VClip {
   sat?: number
   fadeIn?: number
   fadeOut?: number
+  vol?: number
   trans?: { type: string; dur: number }
   id: string
   mediaId: string

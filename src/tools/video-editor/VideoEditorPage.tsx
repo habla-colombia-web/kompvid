@@ -231,6 +231,7 @@ export default function VideoEditorPage() {
   const [dropAt, setDropAt] = useState<number | null>(null)
   const [tab, setTab] = useState<RailTab>('media')
   const [trQ, setTrQ] = useState('')
+  const [rtab, setRtab] = useState<'edit' | 'color' | 'fade' | 'audio'>('edit')
   const [recMode, setRecMode] = useState<'camera' | 'screen' | 'mic' | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -1289,7 +1290,7 @@ export default function VideoEditorPage() {
             <div className="ed-canvas" style={{ aspectRatio: format.ratioW + ' / ' + format.ratioH, '--ar': format.ratioW / format.ratioH } as React.CSSProperties}>
               <video
                 ref={videoRef}
-                muted={!project.keepVideoAudio}
+                muted={!project.keepVideoAudio || (active?.clip.vol ?? 1) === 0}
                 playsInline
                 style={{ display: activeMedia?.kind === 'video' ? 'block' : 'none', objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...previewFx }}
               />
@@ -1430,15 +1431,32 @@ export default function VideoEditorPage() {
         <h2>Clip seleccionado</h2>
         {!sel && <p className="ed-empty">Haz clic en un clip de la linea de tiempo para editarlo.</p>}
         {selV && (
+          <nav className="ed-rtabs" aria-label="Secciones del clip">
+            {([['edit', 'Edicion'], ['color', 'Colores'], ['fade', 'Fundido'], ['audio', 'Audio']] as const).map(([id, lb]) => (
+              <button key={id} type="button" className={'ed-rtab' + (rtab === id ? ' is-on' : '')} onClick={() => setRtab(id)} aria-pressed={rtab === id}>{lb}</button>
+            ))}
+          </nav>
+        )}
+        {selV && (
           <div className="ed-fields">
-            <NumField label={selVMedia?.kind === 'image' ? 'Duracion (s)' : 'Inicio del recorte (s)'} value={selVMedia?.kind === 'image' ? clipDuration(selV) : selV.inSec} onCommit={(n) => (selVMedia?.kind === 'image' ? patchV(selV.id, { outSec: selV.inSec + n }) : patchV(selV.id, { inSec: n }))} />
-            {selVMedia?.kind !== 'image' && <NumField label="Final del recorte (s)" value={selV.outSec} onCommit={(n) => patchV(selV.id, { outSec: n })} />}
-            <NumField label="Brillo (-100 a 100)" value={selV.bright ?? 0} step={5} onCommit={(n) => patchFx(selV.id, { bright: Math.min(100, Math.max(-100, n)) })} />
-            <NumField label="Contraste (0 a 200)" value={selV.contrast ?? 100} step={5} onCommit={(n) => patchFx(selV.id, { contrast: Math.min(200, Math.max(0, n)) })} />
-            <NumField label="Saturacion (0 a 200)" value={selV.sat ?? 100} step={5} onCommit={(n) => patchFx(selV.id, { sat: Math.min(200, Math.max(0, n)) })} />
-            <NumField label="Fundido de entrada (s)" value={selV.fadeIn ?? 0} onCommit={(n) => patchFx(selV.id, { fadeIn: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />
-            <NumField label="Fundido de salida (s)" value={selV.fadeOut ?? 0} onCommit={(n) => patchFx(selV.id, { fadeOut: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />
-            {selV.trans && (
+            {rtab === 'edit' && <NumField label={selVMedia?.kind === 'image' ? 'Duracion (s)' : 'Inicio del recorte (s)'} value={selVMedia?.kind === 'image' ? clipDuration(selV) : selV.inSec} onCommit={(n) => (selVMedia?.kind === 'image' ? patchV(selV.id, { outSec: selV.inSec + n }) : patchV(selV.id, { inSec: n }))} />}
+            {rtab === 'edit' && selVMedia?.kind !== 'image' && <NumField label="Final del recorte (s)" value={selV.outSec} onCommit={(n) => patchV(selV.id, { outSec: n })} />}
+            {rtab === 'color' && <NumField label="Brillo (-100 a 100)" value={selV.bright ?? 0} step={5} onCommit={(n) => patchFx(selV.id, { bright: Math.min(100, Math.max(-100, n)) })} />}
+            {rtab === 'color' && <NumField label="Contraste (0 a 200)" value={selV.contrast ?? 100} step={5} onCommit={(n) => patchFx(selV.id, { contrast: Math.min(200, Math.max(0, n)) })} />}
+            {rtab === 'color' && <NumField label="Saturacion (0 a 200)" value={selV.sat ?? 100} step={5} onCommit={(n) => patchFx(selV.id, { sat: Math.min(200, Math.max(0, n)) })} />}
+            {rtab === 'fade' && <NumField label="Fundido de entrada (s)" value={selV.fadeIn ?? 0} onCommit={(n) => patchFx(selV.id, { fadeIn: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />}
+            {rtab === 'fade' && <NumField label="Fundido de salida (s)" value={selV.fadeOut ?? 0} onCommit={(n) => patchFx(selV.id, { fadeOut: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />}
+            {rtab === 'audio' && (
+              selVMedia?.kind === 'video' ? (
+                <label>
+                  Volumen del clip: {Math.round((selV.vol ?? 1) * 100)}%
+                  <input type="range" min={0} max={100} value={Math.round((selV.vol ?? 1) * 100)} onChange={(e) => patchFx(selV.id, { vol: Number(e.target.value) / 100 })} />
+                </label>
+              ) : (
+                <p className="ed-empty">Este clip no tiene audio propio.</p>
+              )
+            )}
+            {rtab === 'fade' && selV.trans && (
               <>
                 <NumField label="Transicion al siguiente (s)" value={selV.trans.dur} step={0.1} onCommit={(n) => setTransDur(selV.id, n)} />
                 <button type="button" className="ed-btn" onClick={() => removeTrans(selV.id)}>Quitar transicion</button>

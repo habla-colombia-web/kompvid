@@ -254,3 +254,8 @@ section.ed.wrap .ed-rside .ed-fields label { display: flex; flex-direction: colu
 section.ed.wrap .ed-rside input[type="number"], section.ed.wrap .ed-rside textarea, section.ed.wrap .ed-rside input[type="text"] { width: 100%; box-sizing: border-box; }
 section.ed.wrap .ed-rside .ed-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 @media (max-width: 760px) { section.ed.wrap .ed-main { grid-template-columns: 1fr; } section.ed.wrap .ed-main > .ed-panel.ed-rside { height: auto; max-height: 320px; } }
+/* Pestanas del panel derecho */
+.ed-rtabs { display: flex; gap: 4px; margin-bottom: 8px; flex-wrap: wrap; }
+.ed-rtab { flex: 1 1 auto; padding: 6px 8px; border: 1px solid var(--bd); border-radius: 8px; background: var(--bg); color: var(--mu); font: inherit; font-size: 0.75rem; cursor: pointer; }
+.ed-rtab:hover { color: var(--tx); }
+.ed-rtab.is-on { background: var(--ac); border-color: var(--ac); color: var(--acx); }

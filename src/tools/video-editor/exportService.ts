@@ -19,7 +19,7 @@ export interface ExportSettings {
 
 function fxChain(c: VClip, dur: number): { v: string; a: string } {
   let v = ''
-  let a = ''
+  let a = (c.vol ?? 1) !== 1 ? ',volume=' + (c.vol ?? 1).toFixed(2) : ''
   const b = (c.bright ?? 0) / 100
   const ct = (c.contrast ?? 100) / 100
   const s = (c.sat ?? 100) / 100
