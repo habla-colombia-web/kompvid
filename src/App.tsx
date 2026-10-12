@@ -12,6 +12,7 @@ import RegisterPage from './pages/RegisterPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import AccountPage from './pages/AccountPage'
+import DashboardPage from './pages/DashboardPage'
 import NotFoundPage from './pages/NotFoundPage'
 import AdminRoute from './admin/AdminRoute'
 import AdminLayout from './admin/AdminLayout'
@@ -44,6 +45,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="account" element={<AccountPage />} />
+          <Route path="dashboard" element={<DashboardPage />} />
           {toolRoutes.map(({ tool, Component }) => (
             <Route
               key={tool.id}

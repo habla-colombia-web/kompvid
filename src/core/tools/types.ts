@@ -1,7 +1,7 @@
-﻿import type { ComponentType } from 'react'
+import type { ComponentType } from 'react'
 
 export type PlanId = 'free' | 'pro'
-export type ToolStatus = 'active' | 'coming-soon'
+export type ToolStatus = 'active' | 'development' | 'disabled'
 export type ToolCategory = 'video' | 'image' | 'audio' | 'document'
 
 export interface ToolDefinition {

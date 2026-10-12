@@ -1,0 +1,22 @@
+.dashboard { padding-block: 2rem; }
+.dash-group { margin-top: 2rem; }
+.dash-grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.dash-card {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+}
+.dash-card h2, .dash-card h3 { margin-top: 0; }
+.dash-card.is-planned { opacity: 0.7; }
+.dash-plan-name { font-size: 1.4rem; font-weight: 700; margin: 0.25rem 0 0.75rem; }
+.dash-usage { opacity: 0.8; font-size: 0.9rem; }
+.dash-tag {
+  display: inline-block;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+  font-size: 0.8rem;
+}
+.dash-link { color: var(--accent, #3ee6b0); font-weight: 600; text-decoration: none; }
+.dash-link:hover, .dash-link:focus-visible { text-decoration: underline; }

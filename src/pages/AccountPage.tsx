@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../core/auth/useAuth'
 
 interface Subscription {
@@ -54,6 +55,7 @@ export default function AccountPage() {
         <dt>Estado</dt>
         <dd>{loaded && sub ? (STATUS_LABELS[sub.status] ?? sub.status) : '-'}</dd>
       </dl>
+      <p><Link to="/dashboard">Ir a mi panel</Link></p>
       {error && <p className="form-error" role="alert">{error}</p>}
     </section>
   )
