@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { PRODUCT } from '../config/product'
+import Hero from '../components/Hero'
 import { tools } from '../core/tools/registry'
 
 const STEPS = [
@@ -9,35 +9,9 @@ const STEPS = [
 ]
 
 export default function HomePage() {
-  const hasActiveTool = tools.some((t) => t.status === 'active')
-
   return (
     <>
-      <section className="wrap hero">
-        <div className="hero-copy">
-          <h1>{PRODUCT.tagline}</h1>
-          <p className="hero-sub">{PRODUCT.subtitle}</p>
-          <div className="hero-actions">
-            <Link className="btn btn-primary" to="/register">Crear cuenta</Link>
-            <Link className="btn btn-secondary" to="/pricing">Ver planes</Link>
-          </div>
-          {!hasActiveTool && (
-            <p className="hero-note">El compresor de video está en desarrollo.</p>
-          )}
-        </div>
-
-        <figure className="visual" aria-label="Ilustración de un video que reduce su tamaño">
-          <div className="visual-row">
-            <span className="visual-label">Original</span>
-            <div className="bar bar-original" />
-          </div>
-          <div className="visual-row">
-            <span className="visual-label">Comprimido</span>
-            <div className="bar bar-compressed" />
-          </div>
-          <figcaption>Ilustración del concepto, sin resultados reales.</figcaption>
-        </figure>
-      </section>
+      <Hero />
 
       <section className="band" id="como-funciona">
         <div className="wrap">
