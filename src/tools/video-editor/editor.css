@@ -174,3 +174,12 @@ body.ed-fullscreen section.ed.wrap { --ed-offset: 0px; min-height: 0; }
 /* Grabar y efectos */
 .ed-rec { background: #ef4444 !important; border-color: #ef4444 !important; color: #fff !important; }
 section.ed.wrap .ed-panel { max-height: 130px; }
+/* Iconos y miniaturas en la barra lateral */
+.ed-side .ed-btn svg, .ed-side-lbl svg { flex: none; }
+.ed-side .ed-btn, .ed-side .ed-btn-small { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.ed-side-lbl { display: inline-flex; align-items: center; gap: 6px; }
+.ed-media-actions { align-items: center; }
+.ed-thumb { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 6px; background-color: #1b2c49; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; color: #8aa0c4; overflow: hidden; }
+.ed-thumb svg { width: 28px; height: 28px; }
+.ed-dur { position: absolute; right: 4px; bottom: 4px; padding: 0 5px; border-radius: 4px; background: rgba(0,0,0,0.75); color: #fff; font-size: 0.65rem; line-height: 1.5; }
+.ed-media[draggable="true"]:hover .ed-thumb { outline: 2px solid #7c3aed; }

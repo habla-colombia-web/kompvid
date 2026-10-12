@@ -144,6 +144,20 @@ function NumField(props: { label: string; value: number; step?: number; onCommit
   )
 }
 
+function Ico({ n }: { n: 'camera' | 'screen' | 'mic' | 'text' | 'library' | 'plus' | 'trash' | 'audio' }) {
+  const p = { width: 16, height: 16, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
+  switch (n) {
+    case 'camera': return (<svg {...p}><rect x="2" y="6" width="14" height="12" rx="2" /><polygon points="22 8 16 12 22 16 22 8" /></svg>)
+    case 'screen': return (<svg {...p}><rect x="2" y="4" width="20" height="13" rx="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21" /></svg>)
+    case 'mic': return (<svg {...p}><rect x="9" y="2" width="6" height="12" rx="3" /><path d="M5 11a7 7 0 0 0 14 0" /><line x1="12" y1="18" x2="12" y2="22" /></svg>)
+    case 'text': return (<svg {...p}><polyline points="4 7 4 4 20 4 20 7" /><line x1="9" y1="20" x2="15" y2="20" /><line x1="12" y1="4" x2="12" y2="20" /></svg>)
+    case 'library': return (<svg {...p}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><polyline points="21 15 16 10 5 21" /></svg>)
+    case 'plus': return (<svg {...p}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>)
+    case 'trash': return (<svg {...p}><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V3h6v3" /></svg>)
+    default: return (<svg {...p}><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>)
+  }
+}
+
 export default function VideoEditorPage() {
   const { plan } = usePlan()
   const isPro = plan === 'pro'
@@ -1110,31 +1124,35 @@ export default function VideoEditorPage() {
           {importError && <p className="ed-error" role="alert">{importError}</p>}
           {media.length === 0 && <p className="ed-empty">Aun no hay archivos importados.</p>}
           {media.map((m) => (
-            <div key={m.id} className="ed-media" draggable onDragStart={(e) => { e.dataTransfer.setData("text/kompvid-media", m.id); dragKind.current = m.kind }} onDragEnd={() => setDropAt(null)}>
+            <div key={m.id} className="ed-media" draggable onDragStart={(e) => { e.dataTransfer.setData("text/kompvid-media", m.id); dragKind.current = m.kind; const th = e.currentTarget.querySelector('.ed-thumb'); if (th) e.dataTransfer.setDragImage(th, 40, 24) }} onDragEnd={() => setDropAt(null)}>
+              <div className="ed-thumb" style={thumbStyle(m.id)}>
+                {m.kind === 'audio' && <Ico n="audio" />}
+                {m.kind !== 'image' && <span className="ed-dur">{fmt(m.duration)}</span>}
+              </div>
               <strong title={m.name}>{m.name}</strong>
               <small>
                 {m.kind === 'video' ? 'Video' : m.kind === 'image' ? 'Imagen' : 'Audio'}
                 {m.kind !== 'image' ? ', ' + fmt(m.duration) : ''}, {formatBytes(m.file.size)}
               </small>
               <div className="ed-media-actions">
-                <button type="button" className="ed-btn ed-btn-small" onClick={() => addToTimeline(m)}>Agregar</button>
-                <button type="button" className="ed-btn ed-btn-small" onClick={() => removeMedia(m.id)}>Quitar</button>
+                <button type="button" className="ed-btn ed-btn-small" onClick={() => addToTimeline(m)}><Ico n="plus" /> Agregar</button>
+                <button type="button" className="ed-btn ed-btn-small" onClick={() => removeMedia(m.id)} aria-label="Quitar archivo" title="Quitar"><Ico n="trash" /></button>
               </div>
             </div>
           ))}
           <h2>Grabar</h2>
           <div className="ed-media-actions">
-            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('camera')} disabled={recMode !== null || exporting}>Camara</button>
-            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('screen')} disabled={recMode !== null || exporting}>Pantalla</button>
-            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('mic')} disabled={recMode !== null || exporting}>Voz</button>
+            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('camera')} disabled={recMode !== null || exporting}><Ico n="camera" /> Camara</button>
+            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('screen')} disabled={recMode !== null || exporting}><Ico n="screen" /> Pantalla</button>
+            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('mic')} disabled={recMode !== null || exporting}><Ico n="mic" /> Voz</button>
           </div>
           {recMode && <button type="button" className="ed-btn ed-btn-small ed-rec" onClick={stopRec}>Detener grabacion</button>}
           <h2>Texto</h2>
-          <button type="button" className="ed-btn" onClick={addText}>Agregar texto</button>
+          <button type="button" className="ed-btn" onClick={addText}><Ico n="text" /> Agregar texto</button>
           <h2>Proximamente</h2>
           {SIDE_FUTURE.map((s) => (
             <button key={s.label} type="button" className="ed-side-item" disabled>
-              <span>{s.label}</span>
+              <span className="ed-side-lbl"><Ico n="library" />{s.label}</span>
               <span className="ed-tag">{s.tag}</span>
             </button>
           ))}
