@@ -1426,11 +1426,7 @@ export default function VideoEditorPage() {
       </div>
 
         </div>
-      </div>
-
-      {notice && <p className="ed-notice" role="status">{notice}</p>}
-
-      <div className="ed-panel">
+      <div className="ed-panel ed-rside">
         <h2>Clip seleccionado</h2>
         {!sel && <p className="ed-empty">Haz clic en un clip de la linea de tiempo para editarlo.</p>}
         {selV && (
@@ -1491,6 +1487,9 @@ export default function VideoEditorPage() {
           </div>
         )}
       </div>
+      </div>
+
+      {notice && <p className="ed-notice" role="status">{notice}</p>}
 
       <div className="ed-panel ed-export-status">
         {expStage === 'preparing' && <p role="status">Preparando el motor. La primera vez puede tardar unos segundos.</p>}
