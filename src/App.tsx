@@ -12,6 +12,10 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import AccountPage from './pages/AccountPage'
 import NotFoundPage from './pages/NotFoundPage'
+import AdminRoute from './admin/AdminRoute'
+import AdminLayout from './admin/AdminLayout'
+import AdminDashboardPage from './admin/AdminDashboardPage'
+import AdminPlaceholderPage from './admin/AdminPlaceholderPage'
 
 // Solo las herramientas con estado "active" reciben ruta.
 const toolRoutes = getActiveTools().map((tool) => ({
@@ -22,6 +26,13 @@ const toolRoutes = getActiveTools().map((tool) => ({
 export default function App() {
   return (
     <Routes>
+      <Route path="admin" element={<AdminRoute />}>
+        <Route element={<AdminLayout />}>
+          <Route index element={<AdminDashboardPage />} />
+          <Route path=":section" element={<AdminPlaceholderPage />} />
+        </Route>
+      </Route>
+
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="pricing" element={<PricingPage />} />
