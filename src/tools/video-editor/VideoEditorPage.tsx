@@ -170,6 +170,9 @@ export default function VideoEditorPage() {
   const [expError, setExpError] = useState<string | null>(null)
   const [result, setResult] = useState<{ url: string; size: number; name: string } | null>(null)
   const [projectId, setProjectId] = useState<string | null>(null)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try { return localStorage.getItem('kompvid-ed-theme') === 'dark' ? 'dark' : 'light' } catch { return 'light' }
+  })
   const [saveState, setSaveState] = useState<'idle' | 'saving'>('idle')
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
   const [projects, setProjects] = useState<ProjectRow[] | null>(null)
@@ -844,7 +847,7 @@ export default function VideoEditorPage() {
   const liveTexts = project.texts.filter((c) => t >= c.start && t < c.start + c.duration)
 
   return (
-    <section className="wrap tool-page ed">
+    <section className="wrap tool-page ed" data-theme={theme}>
       <h1 className="page-title">Editor de video - Kompvid Studio</h1>
       <p className="ed-notice" role="status">
         Tus archivos se procesan en tu dispositivo y no se suben a ningun servidor. Guardar conserva la edicion, no los archivos: al abrir un proyecto vuelve a importar los mismos archivos. La exportacion usa mucha memoria; con videos largos puede fallar en equipos modestos. Plan {isPro ? 'Pro' : 'Gratis'}: hasta {limits.maxSeconds} s y {limits.maxShortSide}p. Para solo reducir el peso de un video usa el <Link to="/tools/video-compressor">compresor</Link>.
@@ -901,6 +904,19 @@ export default function VideoEditorPage() {
         </select>
         {projectId && <button type="button" className="ed-btn" onClick={() => void handleDelete()}>Eliminar proyecto</button>}
         {saveMsg && <span className="ed-save" role="status">{saveMsg}</span>}
+        <button
+          type="button"
+          className="ed-btn ed-btn-small"
+          aria-pressed={theme === 'dark'}
+          title="Cambiar tema"
+          onClick={() => {
+            const n = theme === 'light' ? 'dark' : 'light'
+            setTheme(n)
+            try { localStorage.setItem('kompvid-ed-theme', n) } catch { /* sin almacenamiento */ }
+          }}
+        >
+          {theme === 'light' ? 'Tema oscuro' : 'Tema claro'}
+        </button>
         <button type="button" className="ed-btn" onClick={undo} disabled={hist.past.length === 0 || exporting}>Deshacer</button>
         <button type="button" className="ed-btn" onClick={redo} disabled={hist.future.length === 0 || exporting}>Rehacer</button>
       </div>

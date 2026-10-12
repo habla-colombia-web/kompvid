@@ -114,3 +114,37 @@ section.ed.wrap { --ed-offset: 70px; height: calc(100dvh - var(--ed-offset)); mi
 .ed-ruler { touch-action: none; cursor: col-resize; }
 .ed-media[draggable="true"] { cursor: grab; }
 .ed-scissors { display: inline-flex; align-items: center; gap: 4px; }
+/* Clipchamp: temas, visor grande, una sola pantalla */
+section.ed.wrap { --bg:#f3f4f8; --pn:#fff; --bd:#e1e4ea; --tx:#1f2430; --mu:#5b6478; --in:#fff; --st:#eceef5; --ac:#7c3aed; --acx:#fff; --rl:#efe9fd; --cv:#c9cfe0; --c1:#cdbff3; --c1b:#7c3aed; --c1t:#2a1a5e; --ed-offset:64px; height:calc(100dvh - var(--ed-offset)); min-height:560px; gap:6px; padding-top:6px; padding-bottom:6px; background:var(--bg); color:var(--tx); overflow:hidden; }
+section.ed.wrap[data-theme="dark"] { --bg:#0a1428; --pn:#0f1b33; --bd:#2b3d5c; --tx:#fff; --mu:#8aa0c4; --in:#0a1428; --st:#060d1b; --ac:#3ddc97; --acx:#06201a; --rl:#0a1428; --cv:#2b3d5c; --c1:#1b4d3d; --c1b:#3ddc97; --c1t:#fff; }
+section.ed.wrap .ed-top, section.ed.wrap .ed-side, section.ed.wrap .ed-preview, section.ed.wrap .ed-panel, section.ed.wrap .ed-timeline { background:var(--pn); border-color:var(--bd); color:var(--tx); }
+section.ed.wrap .ed-top { gap:6px; padding:6px 10px; flex-wrap:wrap; }
+section.ed.wrap .ed-top input, section.ed.wrap .ed-top select, section.ed.wrap .ed-top .ed-btn { height:30px; padding:2px 8px; font-size:0.8rem; width:auto; min-width:0; margin:0; box-sizing:border-box; }
+section.ed.wrap .ed-top input[type="text"] { flex:0 1 180px; }
+section.ed.wrap input, section.ed.wrap select, section.ed.wrap textarea { background:var(--in); border-color:var(--bd); color:var(--tx); }
+section.ed.wrap .ed-btn { background:var(--pn); border-color:var(--bd); color:var(--tx); }
+section.ed.wrap .ed-btn-primary { background:var(--ac); border-color:var(--ac); color:var(--acx); }
+section.ed.wrap .ed-side h2, section.ed.wrap .ed-panel h2, section.ed.wrap .ed-fields label, section.ed.wrap .ed-save, section.ed.wrap .ed-track-label, section.ed.wrap .ed-tick, section.ed.wrap .ed-empty, section.ed.wrap .ed-track-note, section.ed.wrap .ed-media small, section.ed.wrap .ed-controls, section.ed.wrap .ed-tl-bar { color:var(--mu); }
+section.ed.wrap .ed-side-item, section.ed.wrap .ed-media { background:var(--bg); color:var(--tx); }
+section.ed.wrap .ed-drop { border-color:var(--ac); color:var(--mu); background:transparent; }
+section.ed.wrap .ed-tag { color:var(--ac); }
+.ed > p.ed-notice:first-of-type { padding:2px 10px; font-size:0.7rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:var(--pn); border-color:var(--bd); color:var(--mu); }
+section.ed.wrap .ed-main { flex:1 1 0; min-height:0; grid-template-columns:200px minmax(0,1fr); grid-template-rows:minmax(0,1fr); }
+section.ed.wrap .ed-side { overflow-y:auto; padding:8px; }
+section.ed.wrap .ed-preview { height:100%; min-height:0; overflow:hidden; padding:8px; }
+section.ed.wrap .ed-stage { flex:1 1 0; min-height:200px; height:auto; background:var(--st); }
+section.ed.wrap .ed-canvas { border-color:var(--cv); }
+section.ed.wrap .ed-controls { padding:0 2px; }
+section.ed.wrap .ed-timeline { flex:none; max-height:230px; overflow-y:auto; }
+section.ed.wrap .ed-tl-bar { border-color:var(--bd); padding:4px 10px; }
+section.ed.wrap .ed-ruler { background:var(--rl); border-color:var(--bd); }
+section.ed.wrap .ed-tick { border-color:var(--bd); }
+section.ed.wrap .ed-track { height:34px; border-color:var(--bd); background:transparent; }
+section.ed.wrap .ed-track-label { background:var(--pn); }
+section.ed.wrap .ed-clip { top:2px; height:28px; background:var(--c1); border-color:var(--c1b); color:var(--c1t); }
+section.ed.wrap .ed-clip-t { background:#ffe3a3; border-color:#d9a21b; color:#4a3400; }
+section.ed.wrap .ed-clip-a { background:#bde6f2; border-color:#2a9bbd; color:#0b3a4a; }
+section.ed.wrap .ed-clip.is-sel { outline:2px solid var(--tx); }
+section.ed.wrap .ed-panel { padding:4px 10px; max-height:84px; overflow-y:auto; }
+section.ed.wrap .ed-panel h2 { margin:0 0 2px; font-size:0.8rem; }
+@media (max-width:760px) { section.ed.wrap { height:auto; overflow:visible; } section.ed.wrap .ed-main { grid-template-columns:1fr; grid-template-rows:auto; } section.ed.wrap .ed-preview { height:auto; } section.ed.wrap .ed-stage { height:240px; flex:none; } }
