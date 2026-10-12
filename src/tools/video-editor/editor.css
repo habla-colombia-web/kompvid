@@ -165,3 +165,9 @@ section.ed.wrap .ed-clip { background-size: auto 100%; background-repeat: repeat
   linear-gradient(#7c3aed, #7c3aed) 100% 0 / 10px 10px no-repeat,
   linear-gradient(#7c3aed, #7c3aed) 0 100% / 10px 10px no-repeat,
   linear-gradient(#7c3aed, #7c3aed) 100% 100% / 10px 10px no-repeat; }
+/* Editor a pantalla completa: sin menu ni pie del sitio */
+body.ed-fullscreen > header, body.ed-fullscreen #root header, body.ed-fullscreen #root > footer, body.ed-fullscreen #root footer, body.ed-fullscreen .site-header, body.ed-fullscreen .site-footer, body.ed-fullscreen .navbar, body.ed-fullscreen .footer { display: none !important; }
+body.ed-fullscreen main { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+body.ed-fullscreen { overflow: hidden; }
+body.ed-fullscreen section.ed.wrap { --ed-offset: 0px; min-height: 0; }
+.ed-exit { display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap; }

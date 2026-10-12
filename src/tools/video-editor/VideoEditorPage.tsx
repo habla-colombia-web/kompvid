@@ -174,6 +174,10 @@ export default function VideoEditorPage() {
   const [thumbs, setThumbs] = useState<Record<string, string>>({})
   const thumbReq = useRef(new Set<string>())
   const scrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    document.body.classList.add('ed-fullscreen')
+    return () => document.body.classList.remove('ed-fullscreen')
+  }, [])
   const dragKind = useRef<MediaKind>('video')
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try { return localStorage.getItem('kompvid-ed-theme') === 'dark' ? 'dark' : 'light' } catch { return 'light' }
@@ -941,11 +945,15 @@ export default function VideoEditorPage() {
   return (
     <section className="wrap tool-page ed" data-theme={theme}>
       <h1 className="page-title">Editor de video - Kompvid Studio</h1>
-      <p className="ed-notice" role="status">
-        Tus archivos se procesan en tu dispositivo y no se suben a ningun servidor. Guardar conserva la edicion, no los archivos: al abrir un proyecto vuelve a importar los mismos archivos. La exportacion usa mucha memoria; con videos largos puede fallar en equipos modestos. Plan {isPro ? 'Pro' : 'Gratis'}: hasta {limits.maxSeconds} s y {limits.maxShortSide}p. Para solo reducir el peso de un video usa el <Link to="/tools/video-compressor">compresor</Link>.
-      </p>
 
       <div className="ed-top">
+        <Link
+          to="/"
+          className="ed-btn ed-btn-small ed-exit"
+          onClick={(e) => { if (exporting && !window.confirm('Hay una exportacion en curso. Salir la cancelara.')) e.preventDefault() }}
+        >
+          Salir del editor
+        </Link>
         <button type="button" className="ed-btn ed-btn-primary ed-btn-small" onClick={handleExport} disabled={exporting || project.vclips.length === 0} title="Agrega al menos un clip para exportar">Exportar</button>
         <select value={shortSide} onChange={(e) => setShortSide(Number(e.target.value))} disabled={exporting} aria-label="Resolucion de exportacion">
           {resolutions.map((s) => (
