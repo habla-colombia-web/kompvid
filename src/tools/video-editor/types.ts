@@ -58,6 +58,7 @@ export interface VClip {
   sat?: number
   fadeIn?: number
   fadeOut?: number
+  trans?: { type: string; dur: number }
   id: string
   mediaId: string
   inSec: number
@@ -107,18 +108,58 @@ export const uid = () => Math.random().toString(36).slice(2, 10)
 
 export const clipDuration = (c: { inSec: number; outSec: number }) => c.outSec - c.inSec
 
+export interface TransDef {
+  id: string
+  label: string
+  xfade: string
+  fx: string
+  group: 'basic' | 'wipes'
+  approx?: boolean
+}
+
+export const TRANSITIONS: TransDef[] = [
+  { id: 'fade', label: 'Fundido', xfade: 'fade', fx: 'fade', group: 'basic' },
+  { id: 'blur', label: 'Fundido desenfocado', xfade: 'hblur', fx: 'fade', group: 'basic', approx: true },
+  { id: 'burn', label: 'Quemar', xfade: 'dissolve', fx: 'fade', group: 'basic', approx: true },
+  { id: 'black', label: 'Fundido en negro', xfade: 'fadeblack', fx: 'black', group: 'basic' },
+  { id: 'white', label: 'Fundido en blanco', xfade: 'fadewhite', fx: 'white', group: 'basic' },
+  { id: 'bands', label: 'Bandas horizontales', xfade: 'hlslice', fx: 'bands', group: 'basic' },
+  { id: 'tiles', label: 'Mosaicos', xfade: 'pixelize', fx: 'tiles', group: 'basic' },
+  { id: 'slide-down', label: 'Barrido fuerte abajo', xfade: 'slidedown', fx: 'down', group: 'wipes' },
+  { id: 'slide-up', label: 'Barrido fuerte arriba', xfade: 'slideup', fx: 'up', group: 'wipes' },
+  { id: 'wipe-left', label: 'Borrado fuerte izquierda', xfade: 'wipeleft', fx: 'left', group: 'wipes' },
+  { id: 'wipe-right', label: 'Borrado fuerte derecha', xfade: 'wiperight', fx: 'right', group: 'wipes' },
+  { id: 'smooth-down', label: 'Barrido suave abajo', xfade: 'smoothdown', fx: 'down', group: 'wipes' },
+  { id: 'smooth-up', label: 'Barrido suave arriba', xfade: 'smoothup', fx: 'up', group: 'wipes' },
+  { id: 'smooth-left', label: 'Barrido suave izquierda', xfade: 'smoothleft', fx: 'left', group: 'wipes' },
+  { id: 'smooth-right', label: 'Barrido suave derecha', xfade: 'smoothright', fx: 'right', group: 'wipes' },
+  { id: 'diag', label: 'Barrido suave diagonal', xfade: 'diagbr', fx: 'diag', group: 'wipes' },
+  { id: 'blinds', label: 'Persianas', xfade: 'vuslice', fx: 'blinds', group: 'wipes' },
+  { id: 'circle', label: 'Circulo abierto', xfade: 'circleopen', fx: 'circle', group: 'wipes' },
+]
+
+export function transOverlap(clips: VClip[], i: number): number {
+  const c = clips[i]
+  const n = clips[i + 1]
+  if (!c || !n || !c.trans) return 0
+  const tp = c.trans.type
+  if (!TRANSITIONS.some((x) => x.id === tp)) return 0
+  const o = Math.min(c.trans.dur, clipDuration(c) / 2, clipDuration(n) / 2)
+  return Math.max(0, Math.round(o * 1000) / 1000)
+}
+
 export function videoStarts(clips: VClip[]): number[] {
   const out: number[] = []
   let acc = 0
-  for (const c of clips) {
+  for (let i = 0; i < clips.length; i++) {
     out.push(acc)
-    acc += clipDuration(c)
+    acc += clipDuration(clips[i]) - transOverlap(clips, i)
   }
   return out
 }
 
 export function totalDuration(p: Project): number {
-  return p.vclips.reduce((sum, c) => sum + clipDuration(c), 0)
+  return p.vclips.reduce((sum, c, i) => sum + clipDuration(c) - transOverlap(p.vclips, i), 0)
 }
 
 export function canvasSize(format: CanvasFormatId, shortSide: number): { w: number; h: number } {

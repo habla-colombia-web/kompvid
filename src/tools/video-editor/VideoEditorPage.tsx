@@ -18,6 +18,8 @@ import {
   totalDuration,
   uid,
   videoStarts,
+  TRANSITIONS,
+  transOverlap,
   type AClip,
   type CanvasFormatId,
   type MediaItem,
@@ -25,6 +27,7 @@ import {
   type Project,
   type TextClip,
   type VClip,
+  type TransDef,
 } from './types'
 
 const LIMITS = {
@@ -213,6 +216,7 @@ export default function VideoEditorPage() {
   const [projectId, setProjectId] = useState<string | null>(null)
   const [dropAt, setDropAt] = useState<number | null>(null)
   const [tab, setTab] = useState<RailTab>('media')
+  const [trQ, setTrQ] = useState('')
   const [recMode, setRecMode] = useState<'camera' | 'screen' | 'mic' | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -539,8 +543,8 @@ export default function VideoEditorPage() {
         return
       }
       const cut = c.inSec + (t - s)
-      const second: VClip = { id: uid(), mediaId: c.mediaId, inSec: cut, outSec: c.outSec }
-      commit((p) => ({ ...p, vclips: [...p.vclips.slice(0, i), { ...c, outSec: cut }, second, ...p.vclips.slice(i + 1)] }))
+      const second: VClip = { id: uid(), mediaId: c.mediaId, inSec: cut, outSec: c.outSec, trans: c.trans }
+      commit((p) => ({ ...p, vclips: [...p.vclips.slice(0, i), { ...c, outSec: cut, trans: undefined }, second, ...p.vclips.slice(i + 1)] }))
       setSel({ kind: 'v', id: second.id })
     } else if (sel.kind === 'a') {
       const c = project.aclips.find((x) => x.id === sel.id)
@@ -644,6 +648,10 @@ export default function VideoEditorPage() {
           }
           const arr = [...others]
           arr.splice(at, 0, c)
+          if (!arr.every((x, q) => x.id === base.vclips[q].id)) {
+            const pid = i > 0 ? base.vclips[i - 1].id : ''
+            for (let q = 0; q < arr.length; q++) if (arr[q].id === id || arr[q].id === pid) arr[q] = { ...arr[q], trans: undefined }
+          }
           return { ...base, vclips: arr }
         }
         let inSec = c.inSec
@@ -790,6 +798,25 @@ export default function VideoEditorPage() {
     if (r && r.state !== 'inactive') r.stop()
   }
 
+  function applyTrans(def: TransDef) {
+    if (!sel || sel.kind !== 'v') { setNotice('Selecciona un clip de video en la linea de tiempo.'); return }
+    const i = project.vclips.findIndex((c) => c.id === sel.id)
+    if (i < 0) return
+    if (i >= project.vclips.length - 1) { setNotice('La transicion va entre dos clips: selecciona un clip que tenga otro despues.'); return }
+    const cur = project.vclips[i].trans
+    patchFx(sel.id, { trans: { type: def.id, dur: cur?.dur ?? 1 } })
+  }
+
+  function setTransDur(id: string, n: number) {
+    const c = project.vclips.find((x) => x.id === id)
+    if (!c || !c.trans) return
+    patchFx(id, { trans: { type: c.trans.type, dur: Math.min(2, Math.max(0.2, n)) } })
+  }
+
+  function removeTrans(id: string) {
+    patchFx(id, { trans: undefined })
+  }
+
   function patchFx(id: string, patch: Partial<VClip>) {
     commit((p) => ({ ...p, vclips: p.vclips.map((c) => (c.id === id ? { ...c, ...patch } : c)) }))
   }
@@ -818,8 +845,8 @@ export default function VideoEditorPage() {
     const s = starts[i]
     if (t <= s + 0.1 || t >= s + clipDuration(c) - 0.1) { setNotice('Coloca el cursor dentro del clip para dividirlo.'); return }
     const cut = c.inSec + (t - s)
-    const second: VClip = { id: uid(), mediaId: c.mediaId, inSec: cut, outSec: c.outSec }
-    commit((p) => ({ ...p, vclips: [...p.vclips.slice(0, i), { ...c, outSec: cut }, second, ...p.vclips.slice(i + 1)] }))
+    const second: VClip = { id: uid(), mediaId: c.mediaId, inSec: cut, outSec: c.outSec, trans: c.trans }
+    commit((p) => ({ ...p, vclips: [...p.vclips.slice(0, i), { ...c, outSec: cut, trans: undefined }, second, ...p.vclips.slice(i + 1)] }))
     setSel({ kind: 'v', id: second.id })
   }
 
@@ -1205,7 +1232,25 @@ export default function VideoEditorPage() {
             {tab === 'trans' && (
               <>
                 <h2>Transiciones</h2>
-                <p className="ed-empty">Las transiciones entre clips aun no existen. Los fundidos de entrada y salida estan en el panel del clip seleccionado.</p>
+                <input className="ed-search" type="search" placeholder="Buscar transiciones" value={trQ} onChange={(e) => setTrQ(e.target.value)} aria-label="Buscar transiciones" />
+                <p className="ed-empty">{selV ? 'Elige una transicion: se aplica entre el clip seleccionado y el siguiente.' : 'Selecciona un clip de video en la linea de tiempo y elige una transicion.'}</p>
+                {(['basic', 'wipes'] as const).map((g) => {
+                  const list = TRANSITIONS.filter((x) => x.group === g && x.label.toLowerCase().includes(trQ.trim().toLowerCase()))
+                  if (list.length === 0) return null
+                  return (
+                    <div key={g}>
+                      {g === 'wipes' && <h3 className="ed-tr-h">Desvanecimientos</h3>}
+                      <div className="ed-trs">
+                        {list.map((x) => (
+                          <button key={x.id} type="button" className={'ed-tr' + (selV?.trans?.type === x.id ? ' is-on' : '')} data-fx={x.fx} onClick={() => applyTrans(x)} title={x.approx ? x.label + ' (aproximada)' : x.label}>
+                            <span className="ed-tr-thumb"><span className="ed-tr-b" /></span>
+                            <span className="ed-tr-name">{x.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
               </>
             )}
           </div>
@@ -1313,8 +1358,8 @@ export default function VideoEditorPage() {
                     <button
                       key={c.id}
                       type="button"
-                      className={'ed-clip' + (sel?.id === c.id ? ' is-sel' : '')}
-                      style={{ left: starts[i] * zoom, width: Math.max(clipDuration(c) * zoom, 6), ...thumbStyle(c.mediaId) }}
+                      className={'ed-clip' + (sel?.id === c.id ? ' is-sel' : '') + (c.trans && transOverlap(project.vclips, i) > 0 ? ' has-trans' : '')}
+                      style={{ left: starts[i] * zoom, width: Math.max(clipDuration(c) * zoom, 6), ...thumbStyle(c.mediaId), '--tw': transOverlap(project.vclips, i) * zoom + 'px' } as React.CSSProperties}
                       onPointerDown={(e) => startDrag(e, 'v', c.id)}
                       title={mediaMap.get(c.mediaId)?.name}
                     >
@@ -1369,6 +1414,12 @@ export default function VideoEditorPage() {
             <NumField label="Saturacion (0 a 200)" value={selV.sat ?? 100} step={5} onCommit={(n) => patchFx(selV.id, { sat: Math.min(200, Math.max(0, n)) })} />
             <NumField label="Fundido de entrada (s)" value={selV.fadeIn ?? 0} onCommit={(n) => patchFx(selV.id, { fadeIn: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />
             <NumField label="Fundido de salida (s)" value={selV.fadeOut ?? 0} onCommit={(n) => patchFx(selV.id, { fadeOut: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />
+            {selV.trans && (
+              <>
+                <NumField label="Transicion al siguiente (s)" value={selV.trans.dur} step={0.1} onCommit={(n) => setTransDur(selV.id, n)} />
+                <button type="button" className="ed-btn" onClick={() => removeTrans(selV.id)}>Quitar transicion</button>
+              </>
+            )}
           </div>
         )}
         {selA && (

@@ -4,6 +4,8 @@ import {
   canvasSize,
   clipDuration,
   totalDuration,
+  transOverlap,
+  TRANSITIONS,
   type MediaItem,
   type VClip,
   type Project,
@@ -113,7 +115,9 @@ export async function exportProject(
         ? 'scale=' + w + ':' + h + ':force_original_aspect_ratio=increase,crop=' + w + ':' + h
         : 'scale=' + w + ':' + h + ':force_original_aspect_ratio=decrease,pad=' + w + ':' + h + ':(ow-iw)/2:(oh-ih)/2:color=black'
 
-    let concatIn = ''
+    let curV = 'v0'
+    let curA = 'a0'
+    let accDur = 0
     for (let i = 0; i < project.vclips.length; i++) {
       const c = project.vclips[i]
       const m = media.get(c.mediaId)
@@ -130,10 +134,26 @@ export async function exportProject(
       } else {
         filters.push('anullsrc=r=44100:cl=stereo:d=' + dur.toFixed(3) + '[a' + i + ']')
       }
-      concatIn += '[v' + i + '][a' + i + ']'
+      if (i === 0) {
+        accDur = dur
+      } else {
+        const ov = transOverlap(project.vclips, i - 1)
+        const tdef = TRANSITIONS.find((x) => x.id === project.vclips[i - 1].trans?.type)
+        if (ov > 0.01 && tdef) {
+          filters.push('[' + curV + '][v' + i + ']xfade=transition=' + tdef.xfade + ':duration=' + ov.toFixed(3) + ':offset=' + (accDur - ov).toFixed(3) + '[xv' + i + ']')
+          filters.push('[' + curA + '][a' + i + ']acrossfade=d=' + ov.toFixed(3) + ',aresample=44100,aformat=channel_layouts=stereo[xa' + i + ']')
+          accDur += dur - ov
+        } else {
+          filters.push('[' + curV + '][' + curA + '][v' + i + '][a' + i + ']concat=n=2:v=1:a=1[xv' + i + '][xa' + i + ']')
+          accDur += dur
+        }
+        curV = 'xv' + i
+        curA = 'xa' + i
+      }
       idx++
     }
-    filters.push(concatIn + 'concat=n=' + project.vclips.length + ':v=1:a=1[vc][ac]')
+    filters.push('[' + curV + ']null[vc]')
+    filters.push('[' + curA + ']anull[ac]')
 
     let vLabel = 'vc'
     let k = 0

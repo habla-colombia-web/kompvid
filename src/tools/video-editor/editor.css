@@ -208,3 +208,35 @@ section.ed.wrap .ed-side.ed-side2 { flex-direction: row; gap: 0; padding: 0; ove
 .ed-card:hover .ed-dur { opacity: 0; }
 .ed-side-act { display: flex; align-items: center; justify-content: flex-start; gap: 8px; width: 100%; }
 @media (max-width: 760px) { section.ed.wrap .ed-main { grid-template-columns: 1fr; } section.ed.wrap .ed-side.ed-side2 { max-height: 280px; } }
+/* Transiciones */
+.ed-search { width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--bd); border-radius: 8px; background: var(--bg); color: var(--tx); font: inherit; font-size: 0.82rem; }
+.ed-tr-h { margin: 8px 0 4px; font-size: 0.85rem; color: var(--tx); }
+.ed-trs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ed-tr { display: flex; flex-direction: column; gap: 3px; padding: 0; border: 0; background: transparent; color: var(--mu); font: inherit; font-size: 0.7rem; text-align: left; cursor: pointer; min-width: 0; }
+.ed-tr:hover { color: var(--tx); }
+.ed-tr-thumb { position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 6px; overflow: hidden; background: linear-gradient(135deg, #5b6fa8, #243357); }
+.ed-tr:hover .ed-tr-thumb, .ed-tr.is-on .ed-tr-thumb { outline: 2px solid var(--ac); }
+.ed-tr-b { position: absolute; inset: 0; background: linear-gradient(135deg, #e08fb5, #6a4c93); animation: edTrFade 1.4s linear infinite alternate paused; animation-delay: -0.7s; }
+.ed-tr:hover .ed-tr-b { animation-play-state: running; }
+.ed-tr-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ed-tr[data-fx="down"] .ed-tr-b { animation-name: edTrDown; }
+.ed-tr[data-fx="up"] .ed-tr-b { animation-name: edTrUp; }
+.ed-tr[data-fx="left"] .ed-tr-b { animation-name: edTrLeft; }
+.ed-tr[data-fx="right"] .ed-tr-b { animation-name: edTrRight; }
+.ed-tr[data-fx="diag"] .ed-tr-b { animation-name: edTrDiag; }
+.ed-tr[data-fx="circle"] .ed-tr-b { animation-name: edTrCircle; }
+.ed-tr[data-fx="black"] .ed-tr-b { animation-name: edTrBlack; }
+.ed-tr[data-fx="white"] .ed-tr-b { animation-name: edTrWhite; }
+.ed-tr[data-fx="bands"] .ed-tr-b { -webkit-mask-image: repeating-linear-gradient(0deg, #000 0 5px, transparent 5px 10px); mask-image: repeating-linear-gradient(0deg, #000 0 5px, transparent 5px 10px); }
+.ed-tr[data-fx="blinds"] .ed-tr-b { -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 12px); mask-image: repeating-linear-gradient(90deg, #000 0 6px, transparent 6px 12px); }
+.ed-tr[data-fx="tiles"] .ed-tr-b { -webkit-mask-image: repeating-conic-gradient(#000 0 25%, transparent 0 50%); mask-image: repeating-conic-gradient(#000 0 25%, transparent 0 50%); -webkit-mask-size: 14px 14px; mask-size: 14px 14px; }
+@keyframes edTrFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes edTrDown { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0); } }
+@keyframes edTrUp { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
+@keyframes edTrLeft { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
+@keyframes edTrRight { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes edTrDiag { from { clip-path: polygon(0 0, 0 0, 0 0); } to { clip-path: polygon(0 0, 220% 0, 0 220%); } }
+@keyframes edTrCircle { from { clip-path: circle(0%); } to { clip-path: circle(75%); } }
+@keyframes edTrBlack { 0% { opacity: 0; filter: brightness(0); } 50% { opacity: 1; filter: brightness(0); } 100% { opacity: 1; filter: brightness(1); } }
+@keyframes edTrWhite { 0% { opacity: 0; filter: brightness(4); } 50% { opacity: 1; filter: brightness(4); } 100% { opacity: 1; filter: brightness(1); } }
+.ed-clip.has-trans::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: var(--tw); background: rgba(255, 255, 255, 0.35); border-left: 2px solid var(--ac); pointer-events: none; z-index: 2; }
