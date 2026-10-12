@@ -528,6 +528,144 @@ export default function VideoEditorPage() {
     setT(Math.min(Math.max(0, (e.clientX - rect.left) / zoom), total))
   }
 
+  function beginDrag(x0: number, y0: number, onMove: (dx: number, dy: number) => void) {
+    setPlaying(false)
+    setHist((h) => ({ past: [...h.past.slice(-99), h.present], present: h.present, future: [] }))
+    const move = (ev: PointerEvent) => onMove(ev.clientX - x0, ev.clientY - y0)
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+  }
+
+  function startDrag(e: React.PointerEvent<HTMLButtonElement>, kind: 'v' | 't' | 'a', id: string) {
+    if (exporting) return
+    e.preventDefault()
+    setSel({ kind, id })
+    const rect = e.currentTarget.getBoundingClientRect()
+    const zone = Math.min(8, rect.width / 3)
+    const mode: 'move' | 'left' | 'right' = e.clientX - rect.left < zone ? 'left' : rect.right - e.clientX < zone ? 'right' : 'move'
+    const base = project
+    const bs = videoStarts(base.vclips)
+    const baseTotal = totalDuration(base)
+    const apply = (dt: number): Project => {
+      if (kind === 'v') {
+        const i = base.vclips.findIndex((x) => x.id === id)
+        if (i < 0) return base
+        const c = base.vclips[i]
+        const m = mediaMap.get(c.mediaId)
+        const d = clipDuration(c)
+        if (mode === 'move') {
+          const center = bs[i] + dt + d / 2
+          const others = base.vclips.filter((x) => x.id !== id)
+          let acc = 0
+          let at = others.length
+          for (let k = 0; k < others.length; k++) {
+            const od = clipDuration(others[k])
+            if (center < acc + od / 2) { at = k; break }
+            acc += od
+          }
+          const arr = [...others]
+          arr.splice(at, 0, c)
+          return { ...base, vclips: arr }
+        }
+        let inSec = c.inSec
+        let outSec = c.outSec
+        if (m?.kind === 'image') {
+          outSec = c.inSec + Math.max(0.1, d + (mode === 'left' ? -dt : dt))
+        } else if (mode === 'left') {
+          inSec = Math.min(Math.max(0, c.inSec + dt), c.outSec - 0.1)
+        } else {
+          outSec = Math.min(m ? m.duration : c.outSec, Math.max(c.inSec + 0.1, c.outSec + dt))
+        }
+        if (outSec - inSec > d && baseTotal - d + (outSec - inSec) > limits.maxSeconds) return base
+        return { ...base, vclips: base.vclips.map((x) => (x.id === id ? { ...x, inSec, outSec } : x)) }
+      }
+      if (kind === 't') {
+        const c = base.texts.find((x) => x.id === id)
+        if (!c) return base
+        let start = c.start
+        let duration = c.duration
+        if (mode === 'move') start = Math.max(0, c.start + dt)
+        else if (mode === 'right') duration = Math.max(0.2, c.duration + dt)
+        else {
+          const end = c.start + c.duration
+          const ns = Math.min(Math.max(0, c.start + dt), end - 0.2)
+          start = ns
+          duration = end - ns
+        }
+        return { ...base, texts: base.texts.map((x) => (x.id === id ? { ...x, start, duration } : x)) }
+      }
+      const c = base.aclips.find((x) => x.id === id)
+      if (!c) return base
+      const m = mediaMap.get(c.mediaId)
+      let { start, inSec, outSec } = c
+      if (mode === 'move') start = Math.max(0, c.start + dt)
+      else if (mode === 'right') outSec = Math.min(m ? m.duration : c.outSec, Math.max(c.inSec + 0.1, c.outSec + dt))
+      else {
+        const delta = Math.min(Math.max(dt, -Math.min(c.inSec, c.start)), c.outSec - c.inSec - 0.1)
+        inSec = c.inSec + delta
+        start = c.start + delta
+      }
+      return { ...base, aclips: base.aclips.map((x) => (x.id === id ? { ...x, start, inSec, outSec } : x)) }
+    }
+    beginDrag(e.clientX, e.clientY, (dx) => {
+      const next = apply(dx / zoom)
+      setHist((h) => ({ ...h, present: next }))
+    })
+  }
+
+  function startTextDrag(e: React.PointerEvent<HTMLDivElement>, id: string) {
+    if (exporting) return
+    e.preventDefault()
+    setSel({ kind: 't', id })
+    const box = e.currentTarget.getBoundingClientRect()
+    const cv = e.currentTarget.parentElement?.getBoundingClientRect()
+    const base = project
+    const c = base.texts.find((x) => x.id === id)
+    if (!cv || !c) return
+    const rx = Math.max(1, cv.width - box.width)
+    const ry = Math.max(1, cv.height - box.height)
+    beginDrag(e.clientX, e.clientY, (dx, dy) => {
+      const nx = Math.min(100, Math.max(0, c.x + (dx / rx) * 100))
+      const ny = Math.min(100, Math.max(0, c.y + (dy / ry) * 100))
+      const next = { ...base, texts: base.texts.map((x) => (x.id === id ? { ...x, x: nx, y: ny } : x)) }
+      setHist((h) => ({ ...h, present: next }))
+    })
+  }
+
+  function startScrub(e: React.PointerEvent<HTMLDivElement>) {
+    setPlaying(false)
+    const rect = e.currentTarget.getBoundingClientRect()
+    const seek = (x: number) => setT(Math.min(Math.max(0, (x - rect.left) / zoom), total))
+    seek(e.clientX)
+    const move = (ev: PointerEvent) => seek(ev.clientX)
+    const up = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', up)
+  }
+
+  function splitAtCursor() {
+    if (sel) { splitSel(); return }
+    if (!active) { setNotice('Coloca el cursor sobre un clip de video.'); return }
+    const i = project.vclips.findIndex((x) => x.id === active.clip.id)
+    if (i < 0) return
+    const c = project.vclips[i]
+    const s = starts[i]
+    if (t <= s + 0.1 || t >= s + clipDuration(c) - 0.1) { setNotice('Coloca el cursor dentro del clip para dividirlo.'); return }
+    const cut = c.inSec + (t - s)
+    const second: VClip = { id: uid(), mediaId: c.mediaId, inSec: cut, outSec: c.outSec }
+    commit((p) => ({ ...p, vclips: [...p.vclips.slice(0, i), { ...c, outSec: cut }, second, ...p.vclips.slice(i + 1)] }))
+    setSel({ kind: 'v', id: second.id })
+  }
+
   function togglePlay() {
     if (total <= 0) return
     if (!playing && t >= total) setT(0)
@@ -782,7 +920,7 @@ export default function VideoEditorPage() {
           {importError && <p className="ed-error" role="alert">{importError}</p>}
           {media.length === 0 && <p className="ed-empty">Aun no hay archivos importados.</p>}
           {media.map((m) => (
-            <div key={m.id} className="ed-media">
+            <div key={m.id} className="ed-media" draggable onDragStart={(e) => e.dataTransfer.setData("text/kompvid-media", m.id)}>
               <strong title={m.name}>{m.name}</strong>
               <small>
                 {m.kind === 'video' ? 'Video' : m.kind === 'image' ? 'Imagen' : 'Audio'}
@@ -823,7 +961,7 @@ export default function VideoEditorPage() {
               {liveTexts.map((c) => (
                 <div
                   key={c.id}
-                  className="ed-text-live"
+                  className="ed-text-live" onPointerDown={(e) => startTextDrag(e, c.id)}
                   style={{
                     left: c.x + '%',
                     top: c.y + '%',
@@ -858,12 +996,26 @@ export default function VideoEditorPage() {
             Zoom{' '}
             <input type="range" min={10} max={120} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom de la linea de tiempo" />
           </label>
-          <span>{zoom} px por segundo. Haz clic en la regla para mover el cursor.</span>
+          <button type="button" className="ed-btn ed-btn-small ed-scissors" onClick={splitAtCursor} disabled={exporting} title="Dividir en el cursor" aria-label="Dividir en el cursor">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><line x1="8.6" y1="7.6" x2="20" y2="19" /><line x1="8.6" y1="16.4" x2="20" y2="5" /></svg>
+            {' '}Dividir
+          </button>
+          <button type="button" className="ed-btn ed-btn-small" onClick={deleteSel} disabled={!sel || exporting}>Eliminar</button>
+          <span>{zoom} px por segundo. Arrastra los clips para moverlos y sus bordes para recortar.</span>
         </div>
-        <div className="ed-tl-scroll">
+        <div
+          className="ed-tl-scroll"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault()
+            if (e.dataTransfer.files.length > 0) { void handleFiles(e.dataTransfer.files); return }
+            const m = mediaMap.get(e.dataTransfer.getData('text/kompvid-media'))
+            if (m) addToTimeline(m)
+          }}
+        >
           <div className="ed-tl-inner" style={{ width: span * zoom + 90 }}>
             <div className="ed-playhead" style={{ left: 90 + t * zoom }} />
-            <div className="ed-ruler" style={{ width: span * zoom }} onClick={seekFromRuler}>
+            <div className="ed-ruler" style={{ width: span * zoom }} onPointerDown={startScrub} onClick={seekFromRuler}>
               {ticks.map((s) => (
                 <span key={s} className="ed-tick" style={{ left: s * zoom }}>{Math.floor(s / 60)}:{String(s % 60).padStart(2, '0')}</span>
               ))}
@@ -879,7 +1031,7 @@ export default function VideoEditorPage() {
                       type="button"
                       className={'ed-clip' + (sel?.id === c.id ? ' is-sel' : '')}
                       style={{ left: starts[i] * zoom, width: Math.max(clipDuration(c) * zoom, 6) }}
-                      onClick={() => setSel({ kind: 'v', id: c.id })}
+                      onPointerDown={(e) => startDrag(e, 'v', c.id)}
                       title={mediaMap.get(c.mediaId)?.name}
                     >
                       {mediaMap.get(c.mediaId)?.name ?? 'Archivo eliminado'}
@@ -892,7 +1044,7 @@ export default function VideoEditorPage() {
                       type="button"
                       className={'ed-clip ed-clip-t' + (sel?.id === c.id ? ' is-sel' : '')}
                       style={{ left: c.start * zoom, width: Math.max(c.duration * zoom, 6) }}
-                      onClick={() => setSel({ kind: 't', id: c.id })}
+                      onPointerDown={(e) => startDrag(e, 't', c.id)}
                     >
                       {c.text}
                     </button>
@@ -904,7 +1056,7 @@ export default function VideoEditorPage() {
                       type="button"
                       className={'ed-clip ed-clip-a' + (sel?.id === c.id ? ' is-sel' : '')}
                       style={{ left: c.start * zoom, width: Math.max(clipDuration(c) * zoom, 6) }}
-                      onClick={() => setSel({ kind: 'a', id: c.id })}
+                      onPointerDown={(e) => startDrag(e, 'a', c.id)}
                       title={mediaMap.get(c.mediaId)?.name}
                     >
                       {mediaMap.get(c.mediaId)?.name ?? 'Archivo eliminado'}

@@ -104,3 +104,13 @@ section.ed.wrap { --ed-offset: 70px; height: calc(100dvh - var(--ed-offset)); mi
 .ed-panel { padding: 6px 12px; max-height: 120px; overflow-y: auto; }
 .ed-panel h2 { margin-bottom: 4px; }
 @media (max-width: 760px) { section.ed.wrap { height: auto; overflow: visible; } .ed-main { grid-template-columns: 1fr; grid-template-rows: auto; } .ed-preview { height: auto; } .ed-stage { height: 240px; flex: none; } }
+/* Arrastrar y recortar */
+.ed-clip { cursor: grab; touch-action: none; user-select: none; }
+.ed-clip:active { cursor: grabbing; }
+.ed-clip::before, .ed-clip::after { content: ''; position: absolute; top: 0; bottom: 0; width: 8px; cursor: ew-resize; background: rgba(124, 58, 237, 0.35); }
+.ed-clip::before { left: 0; }
+.ed-clip::after { right: 0; }
+.ed-text-live { pointer-events: auto; cursor: move; touch-action: none; user-select: none; }
+.ed-ruler { touch-action: none; cursor: col-resize; }
+.ed-media[draggable="true"] { cursor: grab; }
+.ed-scissors { display: inline-flex; align-items: center; gap: 4px; }
