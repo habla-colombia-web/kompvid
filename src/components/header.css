@@ -1,6 +1,6 @@
 .sh{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid #e6e6ef}
 .sh *{box-sizing:border-box}
-.sh-row{width:100%;max-width:1120px;margin:0 auto;padding:0 20px;height:68px;display:flex;align-items:center;gap:24px}
+.sh-row{width:100%;max-width:none;margin:0;padding:0 clamp(16px,4vw,64px);height:68px;display:flex;align-items:center;gap:24px}
 .sh-brand{display:inline-flex;align-items:center;gap:10px;color:#0a0030;text-decoration:none;font-weight:700;font-size:1.3rem}
 .sh-brand img{display:block}
 .sh-nav{flex:1;display:flex;align-items:center;justify-content:space-between;gap:24px}

@@ -1,6 +1,6 @@
 footer.site-footer{background:#0a0030;color:#c9c4ea;padding:40px 0 24px;margin-top:64px}
 footer.site-footer *{box-sizing:border-box}
-.sf-wrap{width:100%;max-width:1120px;margin:0 auto;padding:0 20px;display:flex;flex-direction:column}
+.sf-wrap{width:100%;max-width:none;margin:0;padding:0 clamp(16px,4vw,64px);display:flex;flex-direction:column}
 .sf-brand{display:inline-flex;align-items:center;gap:12px;align-self:flex-start;color:#fff;text-decoration:none;font-weight:700;font-size:1.5rem}
 .sf-logo{display:grid;place-items:center;width:44px;height:44px;background:#fff;border-radius:12px}
 .sf-logo img{display:block}
