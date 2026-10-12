@@ -171,3 +171,6 @@ body.ed-fullscreen main { padding: 0 !important; margin: 0 !important; max-width
 body.ed-fullscreen { overflow: hidden; }
 body.ed-fullscreen section.ed.wrap { --ed-offset: 0px; min-height: 0; }
 .ed-exit { display: inline-flex; align-items: center; text-decoration: none; white-space: nowrap; }
+/* Grabar y efectos */
+.ed-rec { background: #ef4444 !important; border-color: #ef4444 !important; color: #fff !important; }
+section.ed.wrap .ed-panel { max-height: 130px; }

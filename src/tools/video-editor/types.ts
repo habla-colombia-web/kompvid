@@ -53,6 +53,11 @@ export interface MediaItem {
 }
 
 export interface VClip {
+  bright?: number
+  contrast?: number
+  sat?: number
+  fadeIn?: number
+  fadeOut?: number
   id: string
   mediaId: string
   inSec: number

@@ -5,6 +5,7 @@ import {
   clipDuration,
   totalDuration,
   type MediaItem,
+  type VClip,
   type Project,
   type TextClip,
 } from './types'
@@ -12,6 +13,26 @@ import {
 export interface ExportSettings {
   shortSide: number
   crf: number
+}
+
+function fxChain(c: VClip, dur: number): { v: string; a: string } {
+  let v = ''
+  let a = ''
+  const b = (c.bright ?? 0) / 100
+  const ct = (c.contrast ?? 100) / 100
+  const s = (c.sat ?? 100) / 100
+  if (b !== 0 || ct !== 1 || s !== 1) v += ',eq=brightness=' + b.toFixed(2) + ':contrast=' + ct.toFixed(2) + ':saturation=' + s.toFixed(2)
+  const fi = Math.min(c.fadeIn ?? 0, dur / 2)
+  const fo = Math.min(c.fadeOut ?? 0, dur / 2)
+  if (fi > 0.01) {
+    v += ',fade=t=in:st=0:d=' + fi.toFixed(2)
+    a += ',afade=t=in:st=0:d=' + fi.toFixed(2)
+  }
+  if (fo > 0.01) {
+    v += ',fade=t=out:st=' + (dur - fo).toFixed(2) + ':d=' + fo.toFixed(2)
+    a += ',afade=t=out:st=' + (dur - fo).toFixed(2) + ':d=' + fo.toFixed(2)
+  }
+  return { v, a }
 }
 
 function extOf(name: string): string {
@@ -98,13 +119,14 @@ export async function exportProject(
       const m = media.get(c.mediaId)
       if (!m) throw new Error('Un clip usa un archivo que ya no esta en el proyecto.')
       const dur = clipDuration(c)
+      const fx = fxChain(c, dur)
       const name = await ensure(m)
       if (m.kind === 'image') args.push('-loop', '1', '-t', dur.toFixed(3), '-i', name)
       else args.push('-ss', c.inSec.toFixed(3), '-t', dur.toFixed(3), '-i', name)
 
-      filters.push('[' + idx + ':v]' + fit + ',setsar=1,fps=30,format=yuv420p,setpts=PTS-STARTPTS[v' + i + ']')
+      filters.push('[' + idx + ':v]' + fit + ',setsar=1,fps=30,format=yuv420p,setpts=PTS-STARTPTS' + fx.v + '[v' + i + ']')
       if (project.keepVideoAudio && m.kind === 'video') {
-        filters.push('[' + idx + ':a]aresample=44100,aformat=channel_layouts=stereo,asetpts=PTS-STARTPTS[a' + i + ']')
+        filters.push('[' + idx + ':a]aresample=44100,aformat=channel_layouts=stereo,asetpts=PTS-STARTPTS' + fx.a + '[a' + i + ']')
       } else {
         filters.push('anullsrc=r=44100:cl=stereo:d=' + dur.toFixed(3) + '[a' + i + ']')
       }

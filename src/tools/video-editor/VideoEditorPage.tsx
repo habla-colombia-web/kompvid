@@ -40,10 +40,10 @@ const VIDEO_EXT = ['mp4', 'webm', 'mov', 'm4v']
 const AUDIO_EXT = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac']
 
 const SIDE_FUTURE = [
-  { label: 'Grabar y crear', tag: 'Futuro' },
+  
   { label: 'Biblioteca de recursos', tag: 'Futuro' },
-  { label: 'Transiciones', tag: 'Futuro' },
-  { label: 'Filtros y efectos', tag: 'Futuro' },
+  
+  
 ]
 
 interface Hist {
@@ -101,7 +101,14 @@ async function probe(file: File, kind: MediaKind): Promise<MediaItem> {
     const p = waitEvent(el, 'loadedmetadata')
     el.src = url
     await p
-    const duration = el.duration
+    let duration = el.duration
+    if (duration === Infinity) {
+      const seek = waitEvent(el, 'timeupdate')
+      el.currentTime = 1e101
+      await seek
+      duration = el.duration
+      el.currentTime = 0
+    }
     const width = kind === 'video' ? (el as HTMLVideoElement).videoWidth : 0
     const height = kind === 'video' ? (el as HTMLVideoElement).videoHeight : 0
     el.removeAttribute('src')
@@ -171,12 +178,22 @@ export default function VideoEditorPage() {
   const [result, setResult] = useState<{ url: string; size: number; name: string } | null>(null)
   const [projectId, setProjectId] = useState<string | null>(null)
   const [dropAt, setDropAt] = useState<number | null>(null)
+  const [recMode, setRecMode] = useState<'camera' | 'screen' | 'mic' | null>(null)
+  const recRef = useRef<MediaRecorder | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
   const [thumbs, setThumbs] = useState<Record<string, string>>({})
   const thumbReq = useRef(new Set<string>())
   const scrollRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     document.body.classList.add('ed-fullscreen')
-    return () => document.body.classList.remove('ed-fullscreen')
+    return () => {
+      document.body.classList.remove('ed-fullscreen')
+      if (recRef.current) {
+        recRef.current.onstop = null
+        try { recRef.current.stop() } catch { /* ya detenido */ }
+      }
+      streamRef.current?.getTracks().forEach((tr) => tr.stop())
+    }
   }, [])
   const dragKind = useRef<MediaKind>('video')
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -698,6 +715,50 @@ export default function VideoEditorPage() {
     window.addEventListener('pointerup', up)
   }
 
+  async function startRec(mode: 'camera' | 'screen' | 'mic') {
+    if (recMode || exporting) return
+    setNotice(null)
+    try {
+      if (!navigator.mediaDevices || typeof MediaRecorder === 'undefined') throw new Error('unsupported')
+      const stream =
+        mode === 'screen'
+          ? await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+          : await navigator.mediaDevices.getUserMedia(mode === 'camera' ? { video: true, audio: true } : { audio: true })
+      const wanted = mode === 'mic' ? ['audio/webm;codecs=opus', 'audio/webm'] : ['video/webm;codecs=vp8,opus', 'video/webm']
+      const mt = wanted.find((x) => MediaRecorder.isTypeSupported(x))
+      const rec = new MediaRecorder(stream, mt ? { mimeType: mt } : undefined)
+      const chunks: Blob[] = []
+      rec.ondataavailable = (ev) => { if (ev.data.size > 0) chunks.push(ev.data) }
+      rec.onstop = () => {
+        stream.getTracks().forEach((tr) => tr.stop())
+        streamRef.current = null
+        recRef.current = null
+        setRecMode(null)
+        if (chunks.length === 0) return
+        const type = mode === 'mic' ? 'audio/webm' : 'video/webm'
+        const label = mode === 'mic' ? 'voz-' : mode === 'screen' ? 'pantalla-' : 'camara-'
+        const file = new File([new Blob(chunks, { type })], label + Date.now() + (mode === 'mic' ? '.weba' : '.webm'), { type })
+        void handleFiles([file])
+      }
+      stream.getVideoTracks()[0]?.addEventListener('ended', () => { if (rec.state !== 'inactive') rec.stop() })
+      streamRef.current = stream
+      recRef.current = rec
+      rec.start(1000)
+      setRecMode(mode)
+    } catch {
+      setNotice('No se pudo iniciar la grabacion. Revisa los permisos del navegador.')
+    }
+  }
+
+  function stopRec() {
+    const r = recRef.current
+    if (r && r.state !== 'inactive') r.stop()
+  }
+
+  function patchFx(id: string, patch: Partial<VClip>) {
+    commit((p) => ({ ...p, vclips: p.vclips.map((c) => (c.id === id ? { ...c, ...patch } : c)) }))
+  }
+
   function zoomTo(next: number) {
     const z = Math.min(240, Math.max(5, next))
     const el = scrollRef.current
@@ -916,6 +977,19 @@ export default function VideoEditorPage() {
     })
   }, [media])
 
+  const fxClip = active?.clip
+  const fxPos = fxClip && active ? active.local - fxClip.inSec : 0
+  const fxDur = fxClip ? clipDuration(fxClip) : 0
+  let fxOp = 1
+  if (fxClip && fxClip.fadeIn && fxPos < fxClip.fadeIn) fxOp = Math.min(fxOp, fxPos / fxClip.fadeIn)
+  if (fxClip && fxClip.fadeOut && fxDur - fxPos < fxClip.fadeOut) fxOp = Math.min(fxOp, (fxDur - fxPos) / fxClip.fadeOut)
+  const previewFx: React.CSSProperties = fxClip
+    ? {
+        filter: 'brightness(' + (1 + (fxClip.bright ?? 0) / 100) + ') contrast(' + (fxClip.contrast ?? 100) / 100 + ') saturate(' + (fxClip.sat ?? 100) / 100 + ')',
+        opacity: Math.max(0, Math.min(1, fxOp)),
+      }
+    : {}
+
   const format = CANVAS_FORMATS.find((f) => f.id === project.format) ?? CANVAS_FORMATS[0]
   const lastText = project.texts.reduce((m, c) => Math.max(m, c.start + c.duration), 0)
   const lastAudio = project.aclips.reduce((m, c) => Math.max(m, c.start + clipDuration(c)), 0)
@@ -1048,6 +1122,13 @@ export default function VideoEditorPage() {
               </div>
             </div>
           ))}
+          <h2>Grabar</h2>
+          <div className="ed-media-actions">
+            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('camera')} disabled={recMode !== null || exporting}>Camara</button>
+            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('screen')} disabled={recMode !== null || exporting}>Pantalla</button>
+            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('mic')} disabled={recMode !== null || exporting}>Voz</button>
+          </div>
+          {recMode && <button type="button" className="ed-btn ed-btn-small ed-rec" onClick={stopRec}>Detener grabacion</button>}
           <h2>Texto</h2>
           <button type="button" className="ed-btn" onClick={addText}>Agregar texto</button>
           <h2>Proximamente</h2>
@@ -1066,10 +1147,10 @@ export default function VideoEditorPage() {
                 ref={videoRef}
                 muted={!project.keepVideoAudio}
                 playsInline
-                style={{ display: activeMedia?.kind === 'video' ? 'block' : 'none', objectFit: project.fit === 'fill' ? 'cover' : 'contain' }}
+                style={{ display: activeMedia?.kind === 'video' ? 'block' : 'none', objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...previewFx }}
               />
               {activeMedia?.kind === 'image' && (
-                <img src={activeMedia.url} alt="" style={{ objectFit: project.fit === 'fill' ? 'cover' : 'contain' }} />
+                <img src={activeMedia.url} alt="" style={{ objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...previewFx }} />
               )}
               {!activeMedia && project.vclips.length === 0 && (
                 <div className="ed-empty-msg">Importa un video o una imagen y pulsa Agregar.</div>
@@ -1212,6 +1293,11 @@ export default function VideoEditorPage() {
           <div className="ed-fields">
             <NumField label={selVMedia?.kind === 'image' ? 'Duracion (s)' : 'Inicio del recorte (s)'} value={selVMedia?.kind === 'image' ? clipDuration(selV) : selV.inSec} onCommit={(n) => (selVMedia?.kind === 'image' ? patchV(selV.id, { outSec: selV.inSec + n }) : patchV(selV.id, { inSec: n }))} />
             {selVMedia?.kind !== 'image' && <NumField label="Final del recorte (s)" value={selV.outSec} onCommit={(n) => patchV(selV.id, { outSec: n })} />}
+            <NumField label="Brillo (-100 a 100)" value={selV.bright ?? 0} step={5} onCommit={(n) => patchFx(selV.id, { bright: Math.min(100, Math.max(-100, n)) })} />
+            <NumField label="Contraste (0 a 200)" value={selV.contrast ?? 100} step={5} onCommit={(n) => patchFx(selV.id, { contrast: Math.min(200, Math.max(0, n)) })} />
+            <NumField label="Saturacion (0 a 200)" value={selV.sat ?? 100} step={5} onCommit={(n) => patchFx(selV.id, { sat: Math.min(200, Math.max(0, n)) })} />
+            <NumField label="Fundido de entrada (s)" value={selV.fadeIn ?? 0} onCommit={(n) => patchFx(selV.id, { fadeIn: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />
+            <NumField label="Fundido de salida (s)" value={selV.fadeOut ?? 0} onCommit={(n) => patchFx(selV.id, { fadeOut: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />
           </div>
         )}
         {selA && (
