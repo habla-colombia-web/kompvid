@@ -158,6 +158,26 @@ function Ico({ n }: { n: 'camera' | 'screen' | 'mic' | 'text' | 'library' | 'plu
   }
 }
 
+type RailTab = 'media' | 'record' | 'library' | 'text' | 'trans'
+const RAIL: { id: RailTab; label: string }[] = [
+  { id: 'media', label: 'Mi multimedia' },
+  { id: 'record', label: 'Grabar y crear' },
+  { id: 'library', label: 'Biblioteca' },
+  { id: 'text', label: 'Texto' },
+  { id: 'trans', label: 'Transiciones' },
+]
+
+function RailIco({ n }: { n: RailTab }) {
+  const p = { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
+  switch (n) {
+    case 'media': return (<svg {...p}><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>)
+    case 'record': return (<svg {...p}><rect x="2" y="6" width="14" height="12" rx="2" /><polygon points="22 8 16 12 22 16 22 8" /></svg>)
+    case 'library': return (<svg {...p}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><polyline points="21 15 16 10 5 21" /></svg>)
+    case 'text': return (<svg {...p}><polyline points="4 7 4 4 20 4 20 7" /><line x1="9" y1="20" x2="15" y2="20" /><line x1="12" y1="4" x2="12" y2="20" /></svg>)
+    default: return (<svg {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><polygon points="8 8 12 12 8 16" /><polygon points="16 8 12 12 16 16" /></svg>)
+  }
+}
+
 export default function VideoEditorPage() {
   const { plan } = usePlan()
   const isPro = plan === 'pro'
@@ -192,6 +212,7 @@ export default function VideoEditorPage() {
   const [result, setResult] = useState<{ url: string; size: number; name: string } | null>(null)
   const [projectId, setProjectId] = useState<string | null>(null)
   const [dropAt, setDropAt] = useState<number | null>(null)
+  const [tab, setTab] = useState<RailTab>('media')
   const [recMode, setRecMode] = useState<'camera' | 'screen' | 'mic' | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -1110,52 +1131,84 @@ export default function VideoEditorPage() {
       </div>
 
       <div className="ed-main">
-        <aside className="ed-side" aria-label="Recursos del proyecto">
-          <h2>Mi multimedia</h2>
-          <label
-            className={dragging ? 'ed-drop is-active' : 'ed-drop'}
-            onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
-          >
-            <input className="sr-only" type="file" multiple accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp,audio/*,.mp4,.webm,.mov,.m4v,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a,.aac,.ogg,.flac" onChange={handleInput} />
-            Arrastra archivos aqui o haz clic para importar
-          </label>
-          {importError && <p className="ed-error" role="alert">{importError}</p>}
-          {media.length === 0 && <p className="ed-empty">Aun no hay archivos importados.</p>}
-          {media.map((m) => (
-            <div key={m.id} className="ed-media" draggable onDragStart={(e) => { e.dataTransfer.setData("text/kompvid-media", m.id); dragKind.current = m.kind; const th = e.currentTarget.querySelector('.ed-thumb'); if (th) e.dataTransfer.setDragImage(th, 40, 24) }} onDragEnd={() => setDropAt(null)}>
-              <div className="ed-thumb" style={thumbStyle(m.id)}>
-                {m.kind === 'audio' && <Ico n="audio" />}
-                {m.kind !== 'image' && <span className="ed-dur">{fmt(m.duration)}</span>}
-              </div>
-              <strong title={m.name}>{m.name}</strong>
-              <small>
-                {m.kind === 'video' ? 'Video' : m.kind === 'image' ? 'Imagen' : 'Audio'}
-                {m.kind !== 'image' ? ', ' + fmt(m.duration) : ''}, {formatBytes(m.file.size)}
-              </small>
-              <div className="ed-media-actions">
-                <button type="button" className="ed-btn ed-btn-small" onClick={() => addToTimeline(m)}><Ico n="plus" /> Agregar</button>
-                <button type="button" className="ed-btn ed-btn-small" onClick={() => removeMedia(m.id)} aria-label="Quitar archivo" title="Quitar"><Ico n="trash" /></button>
-              </div>
-            </div>
-          ))}
-          <h2>Grabar</h2>
-          <div className="ed-media-actions">
-            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('camera')} disabled={recMode !== null || exporting}><Ico n="camera" /> Camara</button>
-            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('screen')} disabled={recMode !== null || exporting}><Ico n="screen" /> Pantalla</button>
-            <button type="button" className="ed-btn ed-btn-small" onClick={() => void startRec('mic')} disabled={recMode !== null || exporting}><Ico n="mic" /> Voz</button>
+        <aside className="ed-side ed-side2" aria-label="Recursos del proyecto">
+          <nav className="ed-rail" aria-label="Herramientas">
+            {RAIL.map((r) => (
+              <button key={r.id} type="button" className={'ed-rail-btn' + (tab === r.id ? ' is-on' : '')} onClick={() => setTab(r.id)} aria-pressed={tab === r.id}>
+                <RailIco n={r.id} />
+                <span>{r.label}</span>
+              </button>
+            ))}
+          </nav>
+          <div className="ed-sidepanel">
+            {tab === 'media' && (
+              <>
+                <h2>Mi multimedia</h2>
+                <label
+                  className={dragging ? 'ed-import is-active' : 'ed-import'}
+                  onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+                  onDragLeave={() => setDragging(false)}
+                  onDrop={handleDrop}
+                >
+                  <input className="sr-only" type="file" multiple accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp,audio/*,.mp4,.webm,.mov,.m4v,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a,.aac,.ogg,.flac" onChange={handleInput} />
+                  <Ico n="plus" /> Importar medios
+                </label>
+                {importError && <p className="ed-error" role="alert">{importError}</p>}
+                {media.length === 0 && <p className="ed-empty">Aun no hay archivos. Importa o arrastralos aqui.</p>}
+                <div className="ed-cards">
+                  {media.map((m) => (
+                    <div
+                      key={m.id}
+                      className="ed-card"
+                      draggable
+                      onDragStart={(e) => { e.dataTransfer.setData('text/kompvid-media', m.id); dragKind.current = m.kind; const th = e.currentTarget.querySelector('.ed-thumb'); if (th) e.dataTransfer.setDragImage(th, 40, 24) }}
+                      onDragEnd={() => setDropAt(null)}
+                    >
+                      <div className="ed-thumb" style={thumbStyle(m.id)}>
+                        {m.kind === 'audio' && <Ico n="audio" />}
+                        {m.kind !== 'image' && <span className="ed-dur">{fmt(m.duration)}</span>}
+                        <button type="button" className="ed-card-x" onClick={() => removeMedia(m.id)} aria-label="Quitar archivo" title="Quitar"><Ico n="trash" /></button>
+                        <button type="button" className="ed-card-add" onClick={() => addToTimeline(m)} aria-label="Agregar a la linea de tiempo" title="Agregar"><Ico n="plus" /></button>
+                      </div>
+                      <strong title={m.name}>{m.name}</strong>
+                      <small>{m.kind === 'video' ? 'Video' : m.kind === 'image' ? 'Imagen' : 'Audio'}, {formatBytes(m.file.size)}</small>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {tab === 'record' && (
+              <>
+                <h2>Grabar y crear</h2>
+                <button type="button" className="ed-btn ed-side-act" onClick={() => void startRec('camera')} disabled={recMode !== null || exporting}><Ico n="camera" /> Camara</button>
+                <button type="button" className="ed-btn ed-side-act" onClick={() => void startRec('screen')} disabled={recMode !== null || exporting}><Ico n="screen" /> Pantalla</button>
+                <button type="button" className="ed-btn ed-side-act" onClick={() => void startRec('mic')} disabled={recMode !== null || exporting}><Ico n="mic" /> Voz</button>
+                {recMode && <button type="button" className="ed-btn ed-side-act ed-rec" onClick={stopRec}>Detener grabacion</button>}
+                <p className="ed-empty">La grabacion queda en Mi multimedia.</p>
+              </>
+            )}
+            {tab === 'library' && (
+              <>
+                <h2>Biblioteca</h2>
+                {SIDE_FUTURE.map((s) => (
+                  <p key={s.label} className="ed-empty">{s.label}: proximamente.</p>
+                ))}
+              </>
+            )}
+            {tab === 'text' && (
+              <>
+                <h2>Texto</h2>
+                <button type="button" className="ed-btn ed-side-act" onClick={addText}><Ico n="text" /> Agregar texto</button>
+                <p className="ed-empty">Arrastra el texto en el visor o en la linea de tiempo.</p>
+              </>
+            )}
+            {tab === 'trans' && (
+              <>
+                <h2>Transiciones</h2>
+                <p className="ed-empty">Las transiciones entre clips aun no existen. Los fundidos de entrada y salida estan en el panel del clip seleccionado.</p>
+              </>
+            )}
           </div>
-          {recMode && <button type="button" className="ed-btn ed-btn-small ed-rec" onClick={stopRec}>Detener grabacion</button>}
-          <h2>Texto</h2>
-          <button type="button" className="ed-btn" onClick={addText}><Ico n="text" /> Agregar texto</button>
-          <h2>Proximamente</h2>
-          {SIDE_FUTURE.map((s) => (
-            <button key={s.label} type="button" className="ed-side-item" disabled>
-              <span className="ed-side-lbl"><Ico n="library" />{s.label}</span>
-              <span className="ed-tag">{s.tag}</span>
-            </button>
-          ))}
         </aside>
 
         <div className="ed-preview">

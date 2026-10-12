@@ -183,3 +183,28 @@ section.ed.wrap .ed-panel { max-height: 130px; }
 .ed-thumb svg { width: 28px; height: 28px; }
 .ed-dur { position: absolute; right: 4px; bottom: 4px; padding: 0 5px; border-radius: 4px; background: rgba(0,0,0,0.75); color: #fff; font-size: 0.65rem; line-height: 1.5; }
 .ed-media[draggable="true"]:hover .ed-thumb { outline: 2px solid #7c3aed; }
+/* Barra lateral estilo Clipchamp: columna de iconos y panel */
+section.ed.wrap .ed-main { grid-template-columns: 300px minmax(0, 1fr); }
+section.ed.wrap .ed-side.ed-side2 { flex-direction: row; gap: 0; padding: 0; overflow: hidden; }
+.ed-rail { display: flex; flex-direction: column; gap: 2px; width: 74px; flex: none; padding: 6px 4px; border-right: 1px solid var(--bd); overflow-y: auto; }
+.ed-rail-btn { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 2px; border: 0; border-radius: 8px; background: transparent; color: var(--mu); font: inherit; font-size: 0.66rem; line-height: 1.15; text-align: center; cursor: pointer; }
+.ed-rail-btn:hover { background: var(--bg); color: var(--tx); }
+.ed-rail-btn.is-on { background: var(--bg); color: var(--tx); }
+.ed-rail-btn.is-on::before { content: ''; position: absolute; left: -4px; top: 8px; bottom: 8px; width: 3px; border-radius: 2px; background: var(--ac); }
+.ed-sidepanel { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px; padding: 10px; overflow-y: auto; }
+.ed-sidepanel h2 { margin: 0; font-size: 0.95rem; color: var(--tx); }
+.ed-import { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 10px; border-radius: 8px; background: var(--ac); color: var(--acx); font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+.ed-import.is-active { outline: 2px dashed var(--tx); outline-offset: 2px; }
+.ed-cards { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.ed-card { display: flex; flex-direction: column; gap: 3px; cursor: grab; min-width: 0; }
+.ed-card .ed-thumb { border-radius: 8px; }
+.ed-card:hover .ed-thumb { outline: 2px solid var(--ac); }
+.ed-card strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.78rem; color: var(--tx); }
+.ed-card small { color: var(--mu); font-size: 0.7rem; }
+.ed-card-add, .ed-card-x { position: absolute; display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border: 0; border-radius: 6px; cursor: pointer; opacity: 0; transition: opacity 0.12s; }
+.ed-card-add { right: 6px; bottom: 6px; background: var(--ac); color: var(--acx); }
+.ed-card-x { right: 6px; top: 6px; background: rgba(0, 0, 0, 0.65); color: #fff; }
+.ed-card:hover .ed-card-add, .ed-card:hover .ed-card-x, .ed-card-add:focus-visible, .ed-card-x:focus-visible { opacity: 1; }
+.ed-card:hover .ed-dur { opacity: 0; }
+.ed-side-act { display: flex; align-items: center; justify-content: flex-start; gap: 8px; width: 100%; }
+@media (max-width: 760px) { section.ed.wrap .ed-main { grid-template-columns: 1fr; } section.ed.wrap .ed-side.ed-side2 { max-height: 280px; } }
