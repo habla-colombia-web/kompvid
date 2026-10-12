@@ -62,3 +62,8 @@
   .ed-main { grid-template-columns: 1fr; }
   .ed-stage { height: 240px; }
 }
+/* Ancho completo estilo CapCut */
+section.ed.wrap { width: 100vw; max-width: none; margin-left: calc(50% - 50vw); margin-right: 0; padding-left: 16px; padding-right: 16px; box-sizing: border-box; }
+.ed-main { grid-template-columns: 300px minmax(0, 1fr); min-height: 0; }
+.ed-stage { height: clamp(260px, calc(100vh - 480px), 640px); }
+@media (max-width: 760px) { .ed-main { grid-template-columns: 1fr; } }
