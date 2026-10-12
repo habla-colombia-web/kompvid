@@ -3,10 +3,9 @@ import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { PRODUCT } from '../config/product'
 import { useAuth } from '../core/auth/useAuth'
 import { signOut } from '../core/auth/authApi'
-import './footer.css'
+import SiteFooter from './SiteFooter'
 import StaffLink from '../admin/StaffLink'
 
-const CURRENT_YEAR = new Date().getFullYear()
 
 export default function Layout() {
   const { session, loading } = useAuth()
@@ -81,38 +80,7 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      <footer className="site-footer">
-        <div className="sf-wrap">
-          <Link className="sf-brand" to="/">
-            <img src="/logo.svg" alt="" width={36} height={36} />
-            <span>{PRODUCT.name}</span>
-          </Link>
-
-          <div className="sf-cols">
-            <nav aria-label="Producto">
-              <h2>Producto</h2>
-              <Link to="/">Inicio</Link>
-              <Link to="/pricing">Precios</Link>
-            </nav>
-            <nav aria-label="Cuenta">
-              <h2>Cuenta</h2>
-              {!loading && session ? (
-                <Link to="/account">Mi cuenta</Link>
-              ) : (
-                <>
-                  <Link to="/login">Iniciar sesión</Link>
-                  <Link to="/register">Crear cuenta</Link>
-                </>
-              )}
-            </nav>
-          </div>
-
-          <div className="sf-bottom">
-            <p>&copy; {CURRENT_YEAR} {PRODUCT.name}. Todos los derechos reservados.</p>
-            <p>{PRODUCT.domain}</p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </>
   )
 }
