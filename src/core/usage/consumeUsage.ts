@@ -5,6 +5,7 @@ export interface UsageResult {
   plan?: string
   used?: number
   limit?: number | null
+  reason?: string
 }
 
 export async function consumeUsage(
