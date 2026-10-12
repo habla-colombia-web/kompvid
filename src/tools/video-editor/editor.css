@@ -67,3 +67,7 @@ section.ed.wrap { width: 100vw; max-width: none; margin-left: calc(50% - 50vw); 
 .ed-main { grid-template-columns: 300px minmax(0, 1fr); min-height: 0; }
 .ed-stage { height: clamp(260px, calc(100vh - 480px), 640px); }
 @media (max-width: 760px) { .ed-main { grid-template-columns: 1fr; } }
+/* Linea de tiempo bajo el visor */
+.ed-stage { height: clamp(220px, calc(100vh - 560px), 520px); }
+.ed-preview .ed-timeline { margin-top: 4px; }
+.ed-export-status:not(:has(*)) { display: none; }

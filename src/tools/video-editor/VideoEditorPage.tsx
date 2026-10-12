@@ -701,7 +701,13 @@ export default function VideoEditorPage() {
       </p>
 
       <div className="ed-top">
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} aria-label="Nombre del proyecto" maxLength={80} />
+        <button type="button" className="ed-btn ed-btn-primary ed-btn-small" onClick={handleExport} disabled={exporting || project.vclips.length === 0} title="Agrega al menos un clip para exportar">Exportar</button>
+        <select value={shortSide} onChange={(e) => setShortSide(Number(e.target.value))} disabled={exporting} aria-label="Resolucion de exportacion">
+          {resolutions.map((s) => (
+            <option key={s} value={s}>{s}p</option>
+          ))}
+        </select>
+        {exporting && <button type="button" className="ed-btn ed-btn-small" onClick={cancelExport}>Cancelar</button>}        <input type="text" value={name} onChange={(e) => setName(e.target.value)} aria-label="Nombre del proyecto" maxLength={80} />
         <select
           value={project.format}
           onChange={(e) => commit((p) => ({ ...p, format: e.target.value as CanvasFormatId }))}
@@ -834,62 +840,6 @@ export default function VideoEditorPage() {
               Conservar audio de los videos
             </label>
           </div>
-        </div>
-      </div>
-
-      {notice && <p className="ed-notice" role="status">{notice}</p>}
-
-      <div className="ed-panel">
-        <h2>Clip seleccionado</h2>
-        {!sel && <p className="ed-empty">Haz clic en un clip de la linea de tiempo para editarlo.</p>}
-        {selV && (
-          <div className="ed-fields">
-            <NumField label={selVMedia?.kind === 'image' ? 'Duracion (s)' : 'Inicio del recorte (s)'} value={selVMedia?.kind === 'image' ? clipDuration(selV) : selV.inSec} onCommit={(n) => (selVMedia?.kind === 'image' ? patchV(selV.id, { outSec: selV.inSec + n }) : patchV(selV.id, { inSec: n }))} />
-            {selVMedia?.kind !== 'image' && <NumField label="Final del recorte (s)" value={selV.outSec} onCommit={(n) => patchV(selV.id, { outSec: n })} />}
-          </div>
-        )}
-        {selA && (
-          <div className="ed-fields">
-            <NumField label="Empieza en (s)" value={selA.start} onCommit={(n) => patchA(selA.id, { start: n })} />
-            <NumField label="Recorte: inicio (s)" value={selA.inSec} onCommit={(n) => patchA(selA.id, { inSec: n })} />
-            <NumField label="Recorte: final (s)" value={selA.outSec} onCommit={(n) => patchA(selA.id, { outSec: n })} />
-            <label>
-              Volumen: {Math.round(selA.volume * 100)}%
-              <input type="range" min={0} max={100} value={Math.round(selA.volume * 100)} onChange={(e) => patchA(selA.id, { volume: Number(e.target.value) / 100 })} />
-            </label>
-          </div>
-        )}
-        {selT && (
-          <div className="ed-fields">
-            <label>
-              Texto
-              <textarea key={selT.id + selT.text} rows={2} defaultValue={selT.text} onBlur={(e) => { if (e.target.value !== selT.text && e.target.value.trim()) patchT(selT.id, { text: e.target.value }) }} />
-            </label>
-            <NumField label="Empieza en (s)" value={selT.start} onCommit={(n) => patchT(selT.id, { start: n })} />
-            <NumField label="Duracion (s)" value={selT.duration} onCommit={(n) => patchT(selT.id, { duration: n })} />
-            <NumField label="Tamano (% del alto)" value={selT.size} step={1} onCommit={(n) => patchT(selT.id, { size: n })} />
-            <NumField label="Posicion X (%)" value={selT.x} step={1} onCommit={(n) => patchT(selT.id, { x: n })} />
-            <NumField label="Posicion Y (%)" value={selT.y} step={1} onCommit={(n) => patchT(selT.id, { y: n })} />
-            <label>
-              Color
-              <input type="color" value={selT.color} onChange={(e) => patchT(selT.id, { color: e.target.value })} />
-            </label>
-            <label>
-              <span>Fondo</span>
-              <input type="checkbox" checked={selT.bg} onChange={(e) => patchT(selT.id, { bg: e.target.checked })} />
-            </label>
-          </div>
-        )}
-        {sel && (
-          <div className="ed-actions">
-            <button type="button" className="ed-btn" onClick={() => moveSel(-1)}>{sel.kind === 'v' ? 'Mover antes' : 'Adelantar 0,5 s'}</button>
-            <button type="button" className="ed-btn" onClick={() => moveSel(1)}>{sel.kind === 'v' ? 'Mover despues' : 'Retrasar 0,5 s'}</button>
-            <button type="button" className="ed-btn" onClick={splitSel}>Dividir en el cursor</button>
-            <button type="button" className="ed-btn" onClick={deleteSel}>Eliminar</button>
-          </div>
-        )}
-      </div>
-
       <div className="ed-timeline">
         <div className="ed-tl-bar">
           <label>
@@ -954,24 +904,63 @@ export default function VideoEditorPage() {
         </div>
       </div>
 
-      <div className="ed-panel">
-        <h2>Exportar</h2>
-        <div className="ed-fields">
-          <label>
-            Resolucion
-            <select value={shortSide} onChange={(e) => setShortSide(Number(e.target.value))} disabled={exporting}>
-              {resolutions.map((s) => (
-                <option key={s} value={s}>{s}p</option>
-              ))}
-            </select>
-          </label>
-          <span>Formato: MP4 (H.264 y AAC). Duracion: {fmt(total)}.</span>
-          <button type="button" className="ed-btn ed-btn-primary" onClick={handleExport} disabled={exporting || project.vclips.length === 0}>
-            Exportar video
-          </button>
-          {exporting && <button type="button" className="ed-btn" onClick={cancelExport}>Cancelar</button>}
         </div>
-        {project.vclips.length === 0 && <p className="ed-empty">Agrega al menos un clip de video o imagen para exportar.</p>}
+      </div>
+
+      {notice && <p className="ed-notice" role="status">{notice}</p>}
+
+      <div className="ed-panel">
+        <h2>Clip seleccionado</h2>
+        {!sel && <p className="ed-empty">Haz clic en un clip de la linea de tiempo para editarlo.</p>}
+        {selV && (
+          <div className="ed-fields">
+            <NumField label={selVMedia?.kind === 'image' ? 'Duracion (s)' : 'Inicio del recorte (s)'} value={selVMedia?.kind === 'image' ? clipDuration(selV) : selV.inSec} onCommit={(n) => (selVMedia?.kind === 'image' ? patchV(selV.id, { outSec: selV.inSec + n }) : patchV(selV.id, { inSec: n }))} />
+            {selVMedia?.kind !== 'image' && <NumField label="Final del recorte (s)" value={selV.outSec} onCommit={(n) => patchV(selV.id, { outSec: n })} />}
+          </div>
+        )}
+        {selA && (
+          <div className="ed-fields">
+            <NumField label="Empieza en (s)" value={selA.start} onCommit={(n) => patchA(selA.id, { start: n })} />
+            <NumField label="Recorte: inicio (s)" value={selA.inSec} onCommit={(n) => patchA(selA.id, { inSec: n })} />
+            <NumField label="Recorte: final (s)" value={selA.outSec} onCommit={(n) => patchA(selA.id, { outSec: n })} />
+            <label>
+              Volumen: {Math.round(selA.volume * 100)}%
+              <input type="range" min={0} max={100} value={Math.round(selA.volume * 100)} onChange={(e) => patchA(selA.id, { volume: Number(e.target.value) / 100 })} />
+            </label>
+          </div>
+        )}
+        {selT && (
+          <div className="ed-fields">
+            <label>
+              Texto
+              <textarea key={selT.id + selT.text} rows={2} defaultValue={selT.text} onBlur={(e) => { if (e.target.value !== selT.text && e.target.value.trim()) patchT(selT.id, { text: e.target.value }) }} />
+            </label>
+            <NumField label="Empieza en (s)" value={selT.start} onCommit={(n) => patchT(selT.id, { start: n })} />
+            <NumField label="Duracion (s)" value={selT.duration} onCommit={(n) => patchT(selT.id, { duration: n })} />
+            <NumField label="Tamano (% del alto)" value={selT.size} step={1} onCommit={(n) => patchT(selT.id, { size: n })} />
+            <NumField label="Posicion X (%)" value={selT.x} step={1} onCommit={(n) => patchT(selT.id, { x: n })} />
+            <NumField label="Posicion Y (%)" value={selT.y} step={1} onCommit={(n) => patchT(selT.id, { y: n })} />
+            <label>
+              Color
+              <input type="color" value={selT.color} onChange={(e) => patchT(selT.id, { color: e.target.value })} />
+            </label>
+            <label>
+              <span>Fondo</span>
+              <input type="checkbox" checked={selT.bg} onChange={(e) => patchT(selT.id, { bg: e.target.checked })} />
+            </label>
+          </div>
+        )}
+        {sel && (
+          <div className="ed-actions">
+            <button type="button" className="ed-btn" onClick={() => moveSel(-1)}>{sel.kind === 'v' ? 'Mover antes' : 'Adelantar 0,5 s'}</button>
+            <button type="button" className="ed-btn" onClick={() => moveSel(1)}>{sel.kind === 'v' ? 'Mover despues' : 'Retrasar 0,5 s'}</button>
+            <button type="button" className="ed-btn" onClick={splitSel}>Dividir en el cursor</button>
+            <button type="button" className="ed-btn" onClick={deleteSel}>Eliminar</button>
+          </div>
+        )}
+      </div>
+
+      <div className="ed-panel ed-export-status">
         {expStage === 'preparing' && <p role="status">Preparando el motor. La primera vez puede tardar unos segundos.</p>}
         {expStage === 'working' && (
           <div role="status">
