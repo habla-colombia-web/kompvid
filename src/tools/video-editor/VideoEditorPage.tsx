@@ -170,6 +170,9 @@ export default function VideoEditorPage() {
   const [expError, setExpError] = useState<string | null>(null)
   const [result, setResult] = useState<{ url: string; size: number; name: string } | null>(null)
   const [projectId, setProjectId] = useState<string | null>(null)
+  const [dropAt, setDropAt] = useState<number | null>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const dragKind = useRef<MediaKind>('video')
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try { return localStorage.getItem('kompvid-ed-theme') === 'dark' ? 'dark' : 'light' } catch { return 'light' }
   })
@@ -365,14 +368,14 @@ export default function VideoEditorPage() {
     setSel(null)
   }
 
-  function addToTimeline(m: MediaItem) {
+  function addToTimeline(m: MediaItem, atSec?: number) {
     setNotice(null)
     if (m.kind === 'audio') {
       if (project.aclips.length >= limits.maxAClips) {
         setNotice('Tu plan permite hasta ' + limits.maxAClips + ' clips de audio.')
         return
       }
-      const clip: AClip = { id: uid(), mediaId: m.id, start: Math.min(t, total), inSec: 0, outSec: m.duration, volume: 1 }
+      const clip: AClip = { id: uid(), mediaId: m.id, start: Math.max(0, atSec ?? Math.min(t, total)), inSec: 0, outSec: m.duration, volume: 1 }
       commit((p) => ({ ...p, aclips: [...p.aclips, clip] }))
       setSel({ kind: 'a', id: clip.id })
       return
@@ -386,7 +389,16 @@ export default function VideoEditorPage() {
       return
     }
     const clip: VClip = { id: uid(), mediaId: m.id, inSec: 0, outSec: m.duration }
-    commit((p) => ({ ...p, vclips: [...p.vclips, clip] }))
+    commit((p) => {
+      const st = videoStarts(p.vclips)
+      let at = p.vclips.length
+      if (atSec !== undefined) {
+        for (let k = 0; k < p.vclips.length; k++) {
+          if (atSec < st[k] + clipDuration(p.vclips[k]) / 2) { at = k; break }
+        }
+      }
+      return { ...p, vclips: [...p.vclips.slice(0, at), clip, ...p.vclips.slice(at)] }
+    })
     setSel({ kind: 'v', id: clip.id })
   }
 
@@ -655,6 +667,21 @@ export default function VideoEditorPage() {
     window.addEventListener('pointerup', up)
   }
 
+  function zoomTo(next: number) {
+    const z = Math.min(240, Math.max(5, next))
+    const el = scrollRef.current
+    const screenX = el ? t * zoom - el.scrollLeft : 0
+    setZoom(z)
+    if (el) requestAnimationFrame(() => { el.scrollLeft = Math.max(0, t * z - screenX) })
+  }
+
+  function fitZoom() {
+    const el = scrollRef.current
+    if (!el) return
+    zoomTo((el.clientWidth - 90 - 24) / Math.max(total, 5))
+    requestAnimationFrame(() => { el.scrollLeft = 0 })
+  }
+
   function splitAtCursor() {
     if (sel) { splitSel(); return }
     if (!active) { setNotice('Coloca el cursor sobre un clip de video.'); return }
@@ -835,7 +862,18 @@ export default function VideoEditorPage() {
   const lastText = project.texts.reduce((m, c) => Math.max(m, c.start + c.duration), 0)
   const lastAudio = project.aclips.reduce((m, c) => Math.max(m, c.start + clipDuration(c)), 0)
   const span = Math.max(30, Math.ceil(Math.max(total, lastText, lastAudio) + 10))
-  const tickEvery = zoom >= 60 ? 1 : zoom >= 30 ? 5 : 10
+  const tickEvery = [1, 2, 5, 10, 15, 30, 60, 120, 300].find((s) => s * zoom >= 70) ?? 600
+  const snapDrop = (x: number): number => {
+    if (dragKind.current === 'audio') return x
+    let acc = 0
+    for (const c of project.vclips) {
+      const d = clipDuration(c)
+      if (x < acc + d / 2) return acc
+      acc += d
+    }
+    return acc
+  }
+  const dropShow: number | null = dropAt === null ? null : snapDrop(dropAt)
   const ticks: number[] = []
   for (let s = 0; s <= span; s += tickEvery) ticks.push(s)
 
@@ -936,7 +974,7 @@ export default function VideoEditorPage() {
           {importError && <p className="ed-error" role="alert">{importError}</p>}
           {media.length === 0 && <p className="ed-empty">Aun no hay archivos importados.</p>}
           {media.map((m) => (
-            <div key={m.id} className="ed-media" draggable onDragStart={(e) => e.dataTransfer.setData("text/kompvid-media", m.id)}>
+            <div key={m.id} className="ed-media" draggable onDragStart={(e) => { e.dataTransfer.setData("text/kompvid-media", m.id); dragKind.current = m.kind }} onDragEnd={() => setDropAt(null)}>
               <strong title={m.name}>{m.name}</strong>
               <small>
                 {m.kind === 'video' ? 'Video' : m.kind === 'image' ? 'Imagen' : 'Audio'}
@@ -1010,7 +1048,16 @@ export default function VideoEditorPage() {
         <div className="ed-tl-bar">
           <label>
             Zoom{' '}
-            <input type="range" min={10} max={120} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom de la linea de tiempo" />
+            <button type="button" className="ed-btn ed-btn-small ed-zoom" onClick={() => zoomTo(zoom / 1.25)} aria-label="Alejar zoom" title="Alejar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" /><line x1="8" y1="11" x2="14" y2="11" /></svg>
+            </button>
+            <input type="range" min={5} max={240} value={Math.round(zoom)} onChange={(e) => zoomTo(Number(e.target.value))} aria-label="Zoom de la linea de tiempo" />
+            <button type="button" className="ed-btn ed-btn-small ed-zoom" onClick={() => zoomTo(zoom * 1.25)} aria-label="Acercar zoom" title="Acercar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.5" y2="16.5" /><line x1="8" y1="11" x2="14" y2="11" /><line x1="11" y1="8" x2="11" y2="14" /></svg>
+            </button>
+            <button type="button" className="ed-btn ed-btn-small ed-zoom" onClick={fitZoom} aria-label="Ajustar al contenido" title="Ajustar al contenido">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="4 8 4 4 8 4" /><polyline points="20 8 20 4 16 4" /><polyline points="4 16 4 20 8 20" /><polyline points="20 16 20 20 16 20" /></svg>
+            </button>
           </label>
           <button type="button" className="ed-btn ed-btn-small ed-scissors" onClick={splitAtCursor} disabled={exporting} title="Dividir en el cursor" aria-label="Dividir en el cursor">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><line x1="8.6" y1="7.6" x2="20" y2="19" /><line x1="8.6" y1="16.4" x2="20" y2="5" /></svg>
@@ -1020,17 +1067,24 @@ export default function VideoEditorPage() {
           <span>{zoom} px por segundo. Arrastra los clips para moverlos y sus bordes para recortar.</span>
         </div>
         <div
-          className="ed-tl-scroll"
-          onDragOver={(e) => e.preventDefault()}
+          ref={scrollRef} className="ed-tl-scroll"
+          onDragOver={(e) => {
+            e.preventDefault()
+            const r = e.currentTarget.getBoundingClientRect()
+            setDropAt(Math.max(0, (e.clientX - r.left + e.currentTarget.scrollLeft - 90) / zoom))
+          }}
+          onDragLeave={() => setDropAt(null)}
           onDrop={(e) => {
             e.preventDefault()
+            setDropAt(null)
             if (e.dataTransfer.files.length > 0) { void handleFiles(e.dataTransfer.files); return }
             const m = mediaMap.get(e.dataTransfer.getData('text/kompvid-media'))
-            if (m) addToTimeline(m)
+            if (m) addToTimeline(m, dropAt ?? undefined)
           }}
         >
           <div className="ed-tl-inner" style={{ width: span * zoom + 90 }}>
-            <div className="ed-playhead" style={{ left: 90 + t * zoom }} />
+            <div className="ed-playhead" style={{ left: 90 + t * zoom }}><span className="ed-time-badge">{fmt(t)}</span></div>
+            {dropShow !== null && <div className="ed-drop-line" style={{ left: 90 + dropShow * zoom }} />}
             <div className="ed-ruler" style={{ width: span * zoom }} onPointerDown={startScrub} onClick={seekFromRuler}>
               {ticks.map((s) => (
                 <span key={s} className="ed-tick" style={{ left: s * zoom }}>{Math.floor(s / 60)}:{String(s % 60).padStart(2, '0')}</span>

@@ -148,3 +148,8 @@ section.ed.wrap .ed-clip.is-sel { outline:2px solid var(--tx); }
 section.ed.wrap .ed-panel { padding:4px 10px; max-height:84px; overflow-y:auto; }
 section.ed.wrap .ed-panel h2 { margin:0 0 2px; font-size:0.8rem; }
 @media (max-width:760px) { section.ed.wrap { height:auto; overflow:visible; } section.ed.wrap .ed-main { grid-template-columns:1fr; grid-template-rows:auto; } section.ed.wrap .ed-preview { height:auto; } section.ed.wrap .ed-stage { height:240px; flex:none; } }
+/* Zoom, cabezal con tiempo, indicador de insercion */
+.ed-zoom { display: inline-flex; align-items: center; justify-content: center; padding: 3px 6px; }
+.ed-tl-bar input[type="range"] { width: 120px; }
+.ed-time-badge { position: absolute; top: 3px; left: 4px; padding: 0 5px; border-radius: 4px; background: #ef4444; color: #fff; font-size: 0.65rem; line-height: 1.4; white-space: nowrap; pointer-events: none; }
+.ed-drop-line { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #7c3aed; box-shadow: 0 0 6px #7c3aed; pointer-events: none; z-index: 4; }
