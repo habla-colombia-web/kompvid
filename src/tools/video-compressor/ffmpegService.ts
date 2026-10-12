@@ -3,7 +3,7 @@ import { fetchFile, toBlobURL } from '@ffmpeg/util'
 
 // El nucleo debe ser 0.12.x, igual que @ffmpeg/ffmpeg.
 const CORE_VERSION = '0.12.10'
-const CORE_BASE = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@' + CORE_VERSION + '/dist/umd'
+const CORE_BASE = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@' + CORE_VERSION + '/dist/esm'
 
 const AUTO_MAX_HEIGHT = 720
 const AUDIO_BITRATE = 128_000
