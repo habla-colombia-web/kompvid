@@ -231,6 +231,7 @@ export default function VideoEditorPage() {
   const [dropAt, setDropAt] = useState<number | null>(null)
   const [tab, setTab] = useState<RailTab>('media')
   const [trQ, setTrQ] = useState('')
+  const [rOpen, setROpen] = useState(true)
   const [rtab, setRtab] = useState<'edit' | 'color' | 'fade' | 'audio'>('edit')
   const [recMode, setRecMode] = useState<'camera' | 'screen' | 'mic' | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
@@ -1174,7 +1175,8 @@ export default function VideoEditorPage() {
         <button type="button" className="ed-btn" onClick={redo} disabled={hist.future.length === 0 || exporting}>Rehacer</button>
       </div>
 
-      <div className="ed-main">
+      <div className={'ed-main' + (rOpen ? '' : ' ed-rhide')}>
+        <button type="button" className="ed-rtoggle" onClick={() => setROpen((v) => !v)} aria-expanded={rOpen} title={rOpen ? 'Ocultar panel del clip' : 'Mostrar panel del clip'}>{rOpen ? 'Ocultar panel' : 'Mostrar panel'}</button>
         <aside className="ed-side ed-side2" aria-label="Recursos del proyecto">
           <nav className="ed-rail" aria-label="Herramientas">
             {RAIL.map((r) => (

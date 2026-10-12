@@ -259,3 +259,9 @@ section.ed.wrap .ed-rside .ed-actions { display: flex; flex-wrap: wrap; gap: 6px
 .ed-rtab { flex: 1 1 auto; padding: 6px 8px; border: 1px solid var(--bd); border-radius: 8px; background: var(--bg); color: var(--mu); font: inherit; font-size: 0.75rem; cursor: pointer; }
 .ed-rtab:hover { color: var(--tx); }
 .ed-rtab.is-on { background: var(--ac); border-color: var(--ac); color: var(--acx); }
+/* Ocultar o mostrar el panel derecho */
+section.ed.wrap .ed-main { position: relative; }
+section.ed.wrap .ed-main.ed-rhide { grid-template-columns: 300px minmax(0, 1fr); }
+section.ed.wrap .ed-main.ed-rhide > .ed-rside { display: none; }
+.ed-rtoggle { position: absolute; top: 6px; right: 8px; z-index: 5; padding: 4px 10px; border: 1px solid var(--bd); border-radius: 8px; background: var(--pn); color: var(--tx); font: inherit; font-size: 0.75rem; cursor: pointer; }
+.ed-rtoggle:hover { background: var(--bg); }
