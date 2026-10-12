@@ -1,75 +1,668 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type DragEvent } from 'react'
 import { Link } from 'react-router-dom'
 import './editor.css'
-import { CANVAS_FORMATS, FORMAT_PRESETS, TRACKS, type CanvasFormatId } from './types'
+import { PLANS } from '../../config/product'
+import { usePlan } from '../../core/billing/usePlan'
+import { consumeUsage } from '../../core/usage/consumeUsage'
+import { cancelCompression, loadEngine } from '../video-compressor/ffmpegService'
+import { formatBytes } from '../video-compressor/utils'
+import { exportProject } from './exportService'
+import {
+  CANVAS_FORMATS,
+  EMPTY_PROJECT,
+  FORMAT_PRESETS,
+  TRACKS,
+  clipDuration,
+  totalDuration,
+  uid,
+  videoStarts,
+  type AClip,
+  type CanvasFormatId,
+  type MediaItem,
+  type MediaKind,
+  type Project,
+  type TextClip,
+  type VClip,
+} from './types'
 
-const SIDE_SECTIONS = [
-  { label: 'Mi multimedia', tag: 'Fase 2' },
+const LIMITS = {
+  free: { maxSeconds: 120, maxShortSide: 720, maxVClips: 10, maxAClips: 3, maxTexts: 5, maxMedia: 10 },
+  pro: { maxSeconds: 600, maxShortSide: 1080, maxVClips: 50, maxAClips: 10, maxTexts: 30, maxMedia: 30 },
+}
+const PRO_FILE_CAP_MB = 500
+const IMAGE_SECONDS = 5
+
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'webp']
+const VIDEO_EXT = ['mp4', 'webm', 'mov', 'm4v']
+const AUDIO_EXT = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac']
+
+const SIDE_FUTURE = [
   { label: 'Grabar y crear', tag: 'Futuro' },
   { label: 'Biblioteca de recursos', tag: 'Futuro' },
-  { label: 'Texto y titulos', tag: 'Fase 4' },
-  { label: 'Musica y efectos', tag: 'Fase 4' },
   { label: 'Transiciones', tag: 'Futuro' },
   { label: 'Filtros y efectos', tag: 'Futuro' },
 ]
 
-const TIMELINE_SECONDS = 60
-const TICK_EVERY = 5
+interface Hist {
+  past: Project[]
+  present: Project
+  future: Project[]
+}
 
-function mmss(total: number): string {
-  const m = Math.floor(total / 60)
-  const s = total % 60
-  return m + ':' + String(s).padStart(2, '0')
+type Sel = { kind: 'v' | 't' | 'a'; id: string } | null
+
+function fmt(sec: number): string {
+  const s = Math.max(0, sec)
+  const m = Math.floor(s / 60)
+  return m + ':' + (s % 60).toFixed(1).padStart(4, '0')
+}
+
+function usageMessage(reason?: string, limit?: number | null): string {
+  if (reason === 'limit_reached') {
+    return 'Alcanzaste el limite de ' + (limit ?? 0) + ' usos por dia en esta herramienta. El contador se reinicia a las 7:00 p. m. (hora de Colombia).'
+  }
+  if (reason === 'plan_required') return 'Esta herramienta es solo para Kompvid Pro.'
+  if (reason === 'tool_unavailable') return 'Esta herramienta no esta disponible por ahora.'
+  return 'No se pudo autorizar el uso de esta herramienta.'
+}
+
+function detectKind(file: File): MediaKind | null {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+  if (IMAGE_TYPES.includes(file.type) || IMAGE_EXT.includes(ext)) return 'image'
+  if (file.type.startsWith('video/') || VIDEO_EXT.includes(ext)) return 'video'
+  if (file.type.startsWith('audio/') || AUDIO_EXT.includes(ext)) return 'audio'
+  return null
+}
+
+function waitEvent(el: EventTarget, ok: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error('timeout')), 10000)
+    el.addEventListener(ok, () => { window.clearTimeout(timer); resolve() }, { once: true })
+    el.addEventListener('error', () => { window.clearTimeout(timer); reject(new Error('error')) }, { once: true })
+  })
+}
+
+async function probe(file: File, kind: MediaKind): Promise<MediaItem> {
+  const url = URL.createObjectURL(file)
+  try {
+    if (kind === 'image') {
+      const img = new Image()
+      const p = waitEvent(img, 'load')
+      img.src = url
+      await p
+      if (!img.naturalWidth) throw new Error('empty')
+      return { id: uid(), kind, file, name: file.name, duration: IMAGE_SECONDS, url, width: img.naturalWidth, height: img.naturalHeight }
+    }
+    const el = document.createElement(kind === 'video' ? 'video' : 'audio')
+    el.preload = 'metadata'
+    const p = waitEvent(el, 'loadedmetadata')
+    el.src = url
+    await p
+    const duration = el.duration
+    const width = kind === 'video' ? (el as HTMLVideoElement).videoWidth : 0
+    const height = kind === 'video' ? (el as HTMLVideoElement).videoHeight : 0
+    el.removeAttribute('src')
+    el.load()
+    if (!Number.isFinite(duration) || duration <= 0) throw new Error('duration')
+    if (kind === 'video' && !width) throw new Error('size')
+    return { id: uid(), kind, file, name: file.name, duration, url, width, height }
+  } catch (err) {
+    URL.revokeObjectURL(url)
+    throw err
+  }
+}
+
+function NumField(props: { label: string; value: number; step?: number; onCommit: (n: number) => void }) {
+  const shown = Number(props.value.toFixed(2))
+  return (
+    <label>
+      {props.label}
+      <input
+        key={shown}
+        type="number"
+        step={props.step ?? 0.1}
+        defaultValue={shown}
+        onBlur={(e) => {
+          const n = Number(e.target.value)
+          if (e.target.value !== '' && Number.isFinite(n) && n !== shown) props.onCommit(n)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+        }}
+      />
+    </label>
+  )
 }
 
 export default function VideoEditorPage() {
+  const { plan } = usePlan()
+  const isPro = plan === 'pro'
+  const limits = isPro ? LIMITS.pro : LIMITS.free
+  const maxFileMB = isPro ? PRO_FILE_CAP_MB : PLANS.free.maxFileMB
+
+  const [hist, setHist] = useState<Hist>({ past: [], present: EMPTY_PROJECT, future: [] })
   const [name, setName] = useState('Proyecto sin titulo')
-  const [formatId, setFormatId] = useState<CanvasFormatId>('landscape')
+  const [media, setMedia] = useState<MediaItem[]>([])
+  const [sel, setSel] = useState<Sel>(null)
+  const [t, setT] = useState(0)
+  const [playing, setPlaying] = useState(false)
   const [zoom, setZoom] = useState(30)
+  const [dragging, setDragging] = useState(false)
+  const [importError, setImportError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
+  const [shortSide, setShortSide] = useState(720)
+  const [expStage, setExpStage] = useState<'idle' | 'preparing' | 'working'>('idle')
+  const [progress, setProgress] = useState(0)
+  const [expError, setExpError] = useState<string | null>(null)
+  const [result, setResult] = useState<{ url: string; size: number; name: string } | null>(null)
 
-  const format = CANVAS_FORMATS.find((f) => f.id === formatId) ?? CANVAS_FORMATS[0]
-  const width = TIMELINE_SECONDS * zoom
-  const ticks: number[] = []
-  for (let s = 0; s <= TIMELINE_SECONDS; s += TICK_EVERY) ticks.push(s)
+  const project = hist.present
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const audioEls = useRef(new Map<string, HTMLAudioElement>())
+  const mediaRef = useRef<MediaItem[]>([])
+  const resultUrlRef = useRef<string | null>(null)
+  const runRef = useRef(0)
 
-  function applyPreset(id: string) {
-    const preset = FORMAT_PRESETS.find((p) => p.id === id)
-    if (preset) setFormatId(preset.format)
+  const mediaMap = useMemo(() => new Map(media.map((m) => [m.id, m])), [media])
+  const starts = useMemo(() => videoStarts(project.vclips), [project.vclips])
+  const total = totalDuration(project)
+  const exporting = expStage !== 'idle'
+
+  const commit = useCallback((fn: (p: Project) => Project) => {
+    setHist((h) => {
+      const next = fn(h.present)
+      if (next === h.present) return h
+      return { past: [...h.past.slice(-99), h.present], present: next, future: [] }
+    })
+  }, [])
+
+  function undo() {
+    setHist((h) => (h.past.length ? { past: h.past.slice(0, -1), present: h.past[h.past.length - 1], future: [h.present, ...h.future] } : h))
   }
+  function redo() {
+    setHist((h) => (h.future.length ? { past: [...h.past, h.present], present: h.future[0], future: h.future.slice(1) } : h))
+  }
+
+  useEffect(() => {
+    mediaRef.current = media
+  }, [media])
+
+  useEffect(() => {
+    const els = audioEls.current
+    return () => {
+      runRef.current += 1
+      cancelCompression()
+      mediaRef.current.forEach((m) => URL.revokeObjectURL(m.url))
+      if (resultUrlRef.current) URL.revokeObjectURL(resultUrlRef.current)
+      els.forEach((a) => a.pause())
+      els.clear()
+    }
+  }, [])
+
+  // Reproduccion: reloj propio, el video y el audio se sincronizan en el efecto de abajo.
+  useEffect(() => {
+    if (!playing) return
+    let raf = 0
+    let last = performance.now()
+    const tick = (now: number) => {
+      const dt = (now - last) / 1000
+      last = now
+      setT((prev) => prev + dt)
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [playing])
+
+  useEffect(() => {
+    if (playing && t >= total) {
+      setPlaying(false)
+      setT(total)
+    }
+  }, [t, playing, total])
+
+  const active = useMemo(() => {
+    for (let i = 0; i < project.vclips.length; i++) {
+      const c = project.vclips[i]
+      const d = clipDuration(c)
+      if (t >= starts[i] && t < starts[i] + d) return { clip: c, local: c.inSec + (t - starts[i]) }
+    }
+    return null
+  }, [project.vclips, starts, t])
+
+  const activeMedia = active ? mediaMap.get(active.clip.mediaId) : undefined
+
+  useEffect(() => {
+    const v = videoRef.current
+    if (v) {
+      if (active && activeMedia && activeMedia.kind === 'video') {
+        if (v.dataset.mid !== activeMedia.id) {
+          v.dataset.mid = activeMedia.id
+          v.src = activeMedia.url
+        }
+        if (!playing || Math.abs(v.currentTime - active.local) > 0.3) {
+          try { v.currentTime = active.local } catch { /* aun sin metadatos */ }
+        }
+        if (playing && v.paused) void v.play().catch(() => undefined)
+        if (!playing && !v.paused) v.pause()
+      } else if (!v.paused) {
+        v.pause()
+      }
+    }
+
+    const ids = new Set(project.aclips.map((a) => a.id))
+    audioEls.current.forEach((el, id) => {
+      if (!ids.has(id)) {
+        el.pause()
+        audioEls.current.delete(id)
+      }
+    })
+    for (const a of project.aclips) {
+      const m = mediaMap.get(a.mediaId)
+      if (!m) continue
+      let el = audioEls.current.get(a.id)
+      if (!el) {
+        el = new Audio(m.url)
+        audioEls.current.set(a.id, el)
+      }
+      const on = playing && t >= a.start && t < a.start + clipDuration(a)
+      el.volume = Math.min(1, Math.max(0, a.volume))
+      const target = a.inSec + (t - a.start)
+      if (on) {
+        if (el.paused) {
+          el.currentTime = target
+          void el.play().catch(() => undefined)
+        } else if (Math.abs(el.currentTime - target) > 0.3) {
+          el.currentTime = target
+        }
+      } else if (!el.paused) {
+        el.pause()
+      }
+    }
+  }, [t, playing, active, activeMedia, project.aclips, mediaMap])
+
+  async function handleFiles(files: FileList | File[]) {
+    setImportError(null)
+    setNotice(null)
+    for (const file of Array.from(files)) {
+      if (mediaRef.current.length >= limits.maxMedia) {
+        setImportError('Tu plan permite hasta ' + limits.maxMedia + ' archivos en el proyecto.')
+        return
+      }
+      const kind = detectKind(file)
+      if (!kind) {
+        setImportError('Formato no compatible: ' + file.name + '. Usa video MP4, WebM o MOV, imagen JPG, PNG o WebP, o audio MP3, WAV, M4A, OGG o FLAC.')
+        continue
+      }
+      if (file.size === 0) {
+        setImportError('El archivo esta vacio: ' + file.name)
+        continue
+      }
+      if (file.size > maxFileMB * 1024 * 1024) {
+        setImportError('"' + file.name + '" supera el limite de ' + maxFileMB + ' MB de tu plan.')
+        continue
+      }
+      try {
+        const item = await probe(file, kind)
+        mediaRef.current = [...mediaRef.current, item]
+        setMedia((prev) => [...prev, item])
+      } catch {
+        setImportError('Tu navegador no pudo leer "' + file.name + '". Puede estar danado o usar un formato que no admite.')
+      }
+    }
+  }
+
+  function handleInput(e: ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files
+    if (files) void handleFiles(files)
+    e.target.value = ''
+  }
+
+  function handleDrop(e: DragEvent<HTMLLabelElement>) {
+    e.preventDefault()
+    setDragging(false)
+    void handleFiles(e.dataTransfer.files)
+  }
+
+  function removeMedia(id: string) {
+    const m = mediaMap.get(id)
+    if (!m) return
+    setPlaying(false)
+    commit((p) => ({
+      ...p,
+      vclips: p.vclips.filter((c) => c.mediaId !== id),
+      aclips: p.aclips.filter((c) => c.mediaId !== id),
+    }))
+    URL.revokeObjectURL(m.url)
+    setMedia((prev) => prev.filter((x) => x.id !== id))
+    setSel(null)
+  }
+
+  function addToTimeline(m: MediaItem) {
+    setNotice(null)
+    if (m.kind === 'audio') {
+      if (project.aclips.length >= limits.maxAClips) {
+        setNotice('Tu plan permite hasta ' + limits.maxAClips + ' clips de audio.')
+        return
+      }
+      const clip: AClip = { id: uid(), mediaId: m.id, start: Math.min(t, total), inSec: 0, outSec: m.duration, volume: 1 }
+      commit((p) => ({ ...p, aclips: [...p.aclips, clip] }))
+      setSel({ kind: 'a', id: clip.id })
+      return
+    }
+    if (project.vclips.length >= limits.maxVClips) {
+      setNotice('Tu plan permite hasta ' + limits.maxVClips + ' clips de video.')
+      return
+    }
+    if (total + m.duration > limits.maxSeconds) {
+      setNotice('Tu plan permite proyectos de hasta ' + limits.maxSeconds + ' segundos.')
+      return
+    }
+    const clip: VClip = { id: uid(), mediaId: m.id, inSec: 0, outSec: m.duration }
+    commit((p) => ({ ...p, vclips: [...p.vclips, clip] }))
+    setSel({ kind: 'v', id: clip.id })
+  }
+
+  function addText() {
+    setNotice(null)
+    if (project.texts.length >= limits.maxTexts) {
+      setNotice('Tu plan permite hasta ' + limits.maxTexts + ' textos.')
+      return
+    }
+    const tc: TextClip = { id: uid(), text: 'Texto', start: Math.min(t, total), duration: 3, size: 8, color: '#ffffff', bg: true, x: 50, y: 85 }
+    commit((p) => ({ ...p, texts: [...p.texts, tc] }))
+    setSel({ kind: 't', id: tc.id })
+  }
+
+  function patchV(id: string, patch: Partial<VClip>) {
+    commit((p) => ({
+      ...p,
+      vclips: p.vclips.map((c) => {
+        if (c.id !== id) return c
+        const m = mediaMap.get(c.mediaId)
+        const inSec = Math.max(0, patch.inSec ?? c.inSec)
+        let outSec = patch.outSec ?? c.outSec
+        if (m && m.kind === 'video') outSec = Math.min(outSec, m.duration)
+        if (outSec < inSec + 0.1) return c
+        if (total - clipDuration(c) + (outSec - inSec) > limits.maxSeconds) return c
+        return { ...c, inSec, outSec }
+      }),
+    }))
+  }
+
+  function patchA(id: string, patch: Partial<AClip>) {
+    commit((p) => ({
+      ...p,
+      aclips: p.aclips.map((c) => {
+        if (c.id !== id) return c
+        const m = mediaMap.get(c.mediaId)
+        const inSec = Math.max(0, patch.inSec ?? c.inSec)
+        let outSec = patch.outSec ?? c.outSec
+        if (m) outSec = Math.min(outSec, m.duration)
+        if (outSec < inSec + 0.1) return c
+        return {
+          ...c,
+          inSec,
+          outSec,
+          start: Math.max(0, patch.start ?? c.start),
+          volume: Math.min(1, Math.max(0, patch.volume ?? c.volume)),
+        }
+      }),
+    }))
+  }
+
+  function patchT(id: string, patch: Partial<TextClip>) {
+    commit((p) => ({
+      ...p,
+      texts: p.texts.map((c) => {
+        if (c.id !== id) return c
+        const next = { ...c, ...patch }
+        next.start = Math.max(0, next.start)
+        next.duration = Math.max(0.2, next.duration)
+        next.size = Math.min(30, Math.max(2, next.size))
+        next.x = Math.min(100, Math.max(0, next.x))
+        next.y = Math.min(100, Math.max(0, next.y))
+        return next
+      }),
+    }))
+  }
+
+  function splitSel() {
+    if (!sel) return
+    setNotice(null)
+    const margin = 0.1
+    if (sel.kind === 'v') {
+      const i = project.vclips.findIndex((c) => c.id === sel.id)
+      if (i < 0) return
+      const c = project.vclips[i]
+      const s = starts[i]
+      const d = clipDuration(c)
+      if (t <= s + margin || t >= s + d - margin) {
+        setNotice('Coloca el cursor dentro del clip para dividirlo.')
+        return
+      }
+      const cut = c.inSec + (t - s)
+      const second: VClip = { id: uid(), mediaId: c.mediaId, inSec: cut, outSec: c.outSec }
+      commit((p) => ({ ...p, vclips: [...p.vclips.slice(0, i), { ...c, outSec: cut }, second, ...p.vclips.slice(i + 1)] }))
+      setSel({ kind: 'v', id: second.id })
+    } else if (sel.kind === 'a') {
+      const c = project.aclips.find((x) => x.id === sel.id)
+      if (!c) return
+      const d = clipDuration(c)
+      if (t <= c.start + margin || t >= c.start + d - margin) {
+        setNotice('Coloca el cursor dentro del clip para dividirlo.')
+        return
+      }
+      const cut = c.inSec + (t - c.start)
+      const second: AClip = { ...c, id: uid(), start: t, inSec: cut }
+      commit((p) => ({ ...p, aclips: p.aclips.flatMap((x) => (x.id === c.id ? [{ ...c, outSec: cut }, second] : [x])) }))
+      setSel({ kind: 'a', id: second.id })
+    } else {
+      const c = project.texts.find((x) => x.id === sel.id)
+      if (!c) return
+      if (t <= c.start + margin || t >= c.start + c.duration - margin) {
+        setNotice('Coloca el cursor dentro del texto para dividirlo.')
+        return
+      }
+      const second: TextClip = { ...c, id: uid(), start: t, duration: c.start + c.duration - t }
+      commit((p) => ({ ...p, texts: p.texts.flatMap((x) => (x.id === c.id ? [{ ...c, duration: t - c.start }, second] : [x])) }))
+      setSel({ kind: 't', id: second.id })
+    }
+  }
+
+  function deleteSel() {
+    if (!sel) return
+    setPlaying(false)
+    if (sel.kind === 'v') commit((p) => ({ ...p, vclips: p.vclips.filter((c) => c.id !== sel.id) }))
+    else if (sel.kind === 'a') commit((p) => ({ ...p, aclips: p.aclips.filter((c) => c.id !== sel.id) }))
+    else commit((p) => ({ ...p, texts: p.texts.filter((c) => c.id !== sel.id) }))
+    setSel(null)
+  }
+
+  function moveSel(dir: -1 | 1) {
+    if (!sel) return
+    if (sel.kind === 'v') {
+      const i = project.vclips.findIndex((c) => c.id === sel.id)
+      const j = i + dir
+      if (i < 0 || j < 0 || j >= project.vclips.length) return
+      commit((p) => {
+        const arr = [...p.vclips]
+        ;[arr[i], arr[j]] = [arr[j], arr[i]]
+        return { ...p, vclips: arr }
+      })
+    } else if (sel.kind === 'a') {
+      const c = project.aclips.find((x) => x.id === sel.id)
+      if (c) patchA(c.id, { start: c.start + dir * 0.5 })
+    } else {
+      const c = project.texts.find((x) => x.id === sel.id)
+      if (c) patchT(c.id, { start: c.start + dir * 0.5 })
+    }
+  }
+
+  function seekFromRuler(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setT(Math.min(Math.max(0, (e.clientX - rect.left) / zoom), total))
+  }
+
+  function togglePlay() {
+    if (total <= 0) return
+    if (!playing && t >= total) setT(0)
+    setPlaying((p) => !p)
+  }
+
+  function releaseResult() {
+    if (resultUrlRef.current) URL.revokeObjectURL(resultUrlRef.current)
+    resultUrlRef.current = null
+    setResult(null)
+  }
+
+  async function handleExport() {
+    if (exporting || project.vclips.length === 0) return
+    setPlaying(false)
+    setExpError(null)
+    releaseResult()
+    if (total > limits.maxSeconds) {
+      setExpError('Tu plan permite exportar hasta ' + limits.maxSeconds + ' segundos.')
+      return
+    }
+    runRef.current += 1
+    const run = runRef.current
+    setExpStage('preparing')
+    setProgress(0)
+    try {
+      await loadEngine()
+      if (run !== runRef.current) return
+      const usage = await consumeUsage('video-editor')
+      if (run !== runRef.current) return
+      if (usage.error || !usage.result) {
+        setExpError(usage.error ?? 'No se pudo verificar tu limite de uso.')
+        setExpStage('idle')
+        return
+      }
+      if (!usage.result.allowed) {
+        setExpError(usageMessage(usage.result.reason, usage.result.limit))
+        setExpStage('idle')
+        return
+      }
+      setExpStage('working')
+      const blob = await exportProject(project, mediaMap, { shortSide, crf: 23 }, setProgress)
+      if (run !== runRef.current) return
+      const url = URL.createObjectURL(blob)
+      resultUrlRef.current = url
+      const safe = (name.trim() || 'proyecto').replace(/[^a-zA-Z0-9 _-]/g, '').trim() || 'proyecto'
+      setResult({ url, size: blob.size, name: safe + '-kompvid.mp4' })
+      setExpStage('idle')
+    } catch (err) {
+      console.error('Kompvid Studio exportar:', err)
+      if (run !== runRef.current) return
+      setExpError(
+        'No se pudo exportar. Si tus videos no tienen audio, desmarca "Conservar audio de los videos". Detalle tecnico: ' +
+          (err instanceof Error ? err.message : String(err)),
+      )
+      setExpStage('idle')
+    }
+  }
+
+  function cancelExport() {
+    runRef.current += 1
+    cancelCompression()
+    setProgress(0)
+    setExpStage('idle')
+    setNotice('Exportacion cancelada.')
+  }
+
+  const format = CANVAS_FORMATS.find((f) => f.id === project.format) ?? CANVAS_FORMATS[0]
+  const lastText = project.texts.reduce((m, c) => Math.max(m, c.start + c.duration), 0)
+  const lastAudio = project.aclips.reduce((m, c) => Math.max(m, c.start + clipDuration(c)), 0)
+  const span = Math.max(30, Math.ceil(Math.max(total, lastText, lastAudio) + 10))
+  const tickEvery = zoom >= 60 ? 1 : zoom >= 30 ? 5 : 10
+  const ticks: number[] = []
+  for (let s = 0; s <= span; s += tickEvery) ticks.push(s)
+
+  const selV = sel?.kind === 'v' ? project.vclips.find((c) => c.id === sel.id) : undefined
+  const selA = sel?.kind === 'a' ? project.aclips.find((c) => c.id === sel.id) : undefined
+  const selT = sel?.kind === 't' ? project.texts.find((c) => c.id === sel.id) : undefined
+  const selVMedia = selV ? mediaMap.get(selV.mediaId) : undefined
+  const resolutions = [480, 720, 1080].filter((s) => s <= limits.maxShortSide)
+  const liveTexts = project.texts.filter((c) => t >= c.start && t < c.start + c.duration)
 
   return (
     <section className="wrap tool-page ed">
       <h1 className="page-title">Editor de video - Kompvid Studio</h1>
       <p className="ed-notice" role="status">
-        Version en construccion: por ahora puedes organizar el proyecto y elegir el formato. Importar, editar y exportar llegan en las siguientes fases. Si solo necesitas reducir el peso de un video, usa el{' '}
-        <Link to="/tools/video-compressor">compresor</Link>.
+        Tus archivos se procesan en tu dispositivo y no se suben a ningun servidor. Los proyectos aun no se guardan: si cierras la pagina se pierde el trabajo. La exportacion usa mucha memoria; con videos largos puede fallar en equipos modestos. Plan {isPro ? 'Pro' : 'Gratis'}: hasta {limits.maxSeconds} s y {limits.maxShortSide}p. Para solo reducir el peso de un video usa el <Link to="/tools/video-compressor">compresor</Link>.
       </p>
 
       <div className="ed-top">
         <input type="text" value={name} onChange={(e) => setName(e.target.value)} aria-label="Nombre del proyecto" maxLength={80} />
-        <select value={formatId} onChange={(e) => setFormatId(e.target.value as CanvasFormatId)} aria-label="Formato del video">
+        <select
+          value={project.format}
+          onChange={(e) => commit((p) => ({ ...p, format: e.target.value as CanvasFormatId }))}
+          aria-label="Formato del video"
+        >
           {CANVAS_FORMATS.map((f) => (
             <option key={f.id} value={f.id}>{f.label}</option>
           ))}
         </select>
-        <select value="" onChange={(e) => applyPreset(e.target.value)} aria-label="Preset para redes sociales">
+        <select
+          value=""
+          onChange={(e) => {
+            const preset = FORMAT_PRESETS.find((p) => p.id === e.target.value)
+            if (preset) commit((p) => ({ ...p, format: preset.format }))
+          }}
+          aria-label="Preset para redes sociales"
+        >
           <option value="">Preset de red social</option>
           {FORMAT_PRESETS.map((p) => (
             <option key={p.id} value={p.id}>{p.label}</option>
           ))}
         </select>
+        <select
+          value={project.fit}
+          onChange={(e) => commit((p) => ({ ...p, fit: e.target.value as 'fit' | 'fill' }))}
+          aria-label="Ajuste del video al lienzo"
+        >
+          <option value="fit">Ajustar (barras negras)</option>
+          <option value="fill">Rellenar (recortar bordes)</option>
+        </select>
         <span className="ed-top-spacer" />
         <span className="ed-save">Guardado: aun no disponible</span>
-        <button type="button" className="ed-btn" disabled title="Disponible en la Fase 3">Deshacer</button>
-        <button type="button" className="ed-btn" disabled title="Disponible en la Fase 3">Rehacer</button>
-        <button type="button" className="ed-btn" disabled title="Disponible en la Fase 3">Vista previa</button>
-        <button type="button" className="ed-btn ed-btn-primary" disabled title="Disponible en la Fase 5">Exportar</button>
+        <button type="button" className="ed-btn" onClick={undo} disabled={hist.past.length === 0 || exporting}>Deshacer</button>
+        <button type="button" className="ed-btn" onClick={redo} disabled={hist.future.length === 0 || exporting}>Rehacer</button>
       </div>
 
       <div className="ed-main">
         <aside className="ed-side" aria-label="Recursos del proyecto">
-          <h2>Recursos</h2>
-          {SIDE_SECTIONS.map((s) => (
+          <h2>Mi multimedia</h2>
+          <label
+            className={dragging ? 'ed-drop is-active' : 'ed-drop'}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+          >
+            <input className="sr-only" type="file" multiple accept="video/mp4,video/webm,video/quicktime,image/jpeg,image/png,image/webp,audio/*,.mp4,.webm,.mov,.m4v,.jpg,.jpeg,.png,.webp,.mp3,.wav,.m4a,.aac,.ogg,.flac" onChange={handleInput} />
+            Arrastra archivos aqui o haz clic para importar
+          </label>
+          {importError && <p className="ed-error" role="alert">{importError}</p>}
+          {media.length === 0 && <p className="ed-empty">Aun no hay archivos importados.</p>}
+          {media.map((m) => (
+            <div key={m.id} className="ed-media">
+              <strong title={m.name}>{m.name}</strong>
+              <small>
+                {m.kind === 'video' ? 'Video' : m.kind === 'image' ? 'Imagen' : 'Audio'}
+                {m.kind !== 'image' ? ', ' + fmt(m.duration) : ''}, {formatBytes(m.file.size)}
+              </small>
+              <div className="ed-media-actions">
+                <button type="button" className="ed-btn ed-btn-small" onClick={() => addToTimeline(m)}>Agregar</button>
+                <button type="button" className="ed-btn ed-btn-small" onClick={() => removeMedia(m.id)}>Quitar</button>
+              </div>
+            </div>
+          ))}
+          <h2>Texto</h2>
+          <button type="button" className="ed-btn" onClick={addText}>Agregar texto</button>
+          <h2>Proximamente</h2>
+          {SIDE_FUTURE.map((s) => (
             <button key={s.label} type="button" className="ed-side-item" disabled>
               <span>{s.label}</span>
               <span className="ed-tag">{s.tag}</span>
@@ -80,14 +673,104 @@ export default function VideoEditorPage() {
         <div className="ed-preview">
           <div className="ed-stage">
             <div className="ed-canvas" style={{ aspectRatio: format.ratioW + ' / ' + format.ratioH }}>
-              Lienzo {format.ratioW}:{format.ratioH}. Aun no hay medios en el proyecto.
+              <video
+                ref={videoRef}
+                muted={!project.keepVideoAudio}
+                playsInline
+                style={{ display: activeMedia?.kind === 'video' ? 'block' : 'none', objectFit: project.fit === 'fill' ? 'cover' : 'contain' }}
+              />
+              {activeMedia?.kind === 'image' && (
+                <img src={activeMedia.url} alt="" style={{ objectFit: project.fit === 'fill' ? 'cover' : 'contain' }} />
+              )}
+              {!activeMedia && project.vclips.length === 0 && (
+                <div className="ed-empty-msg">Importa un video o una imagen y pulsa Agregar.</div>
+              )}
+              {liveTexts.map((c) => (
+                <div
+                  key={c.id}
+                  className="ed-text-live"
+                  style={{
+                    left: c.x + '%',
+                    top: c.y + '%',
+                    transform: 'translate(-' + c.x + '%, -' + c.y + '%)',
+                    fontSize: c.size + 'cqh',
+                    color: c.color,
+                    background: c.bg ? 'rgba(0,0,0,0.6)' : 'transparent',
+                  }}
+                >
+                  {c.text}
+                </div>
+              ))}
             </div>
           </div>
           <div className="ed-controls">
-            <button type="button" className="ed-btn" disabled title="Disponible en la Fase 3">Reproducir</button>
-            <span>0:00 / 0:00</span>
+            <button type="button" className="ed-btn" onClick={togglePlay} disabled={total <= 0 || exporting}>
+              {playing ? 'Pausar' : 'Reproducir'}
+            </button>
+            <span>{fmt(t)} / {fmt(total)}</span>
+            <label>
+              <input
+                type="checkbox"
+                checked={project.keepVideoAudio}
+                onChange={(e) => commit((p) => ({ ...p, keepVideoAudio: e.target.checked }))}
+              />{' '}
+              Conservar audio de los videos
+            </label>
           </div>
         </div>
+      </div>
+
+      {notice && <p className="ed-notice" role="status">{notice}</p>}
+
+      <div className="ed-panel">
+        <h2>Clip seleccionado</h2>
+        {!sel && <p className="ed-empty">Haz clic en un clip de la linea de tiempo para editarlo.</p>}
+        {selV && (
+          <div className="ed-fields">
+            <NumField label={selVMedia?.kind === 'image' ? 'Duracion (s)' : 'Inicio del recorte (s)'} value={selVMedia?.kind === 'image' ? clipDuration(selV) : selV.inSec} onCommit={(n) => (selVMedia?.kind === 'image' ? patchV(selV.id, { outSec: selV.inSec + n }) : patchV(selV.id, { inSec: n }))} />
+            {selVMedia?.kind !== 'image' && <NumField label="Final del recorte (s)" value={selV.outSec} onCommit={(n) => patchV(selV.id, { outSec: n })} />}
+          </div>
+        )}
+        {selA && (
+          <div className="ed-fields">
+            <NumField label="Empieza en (s)" value={selA.start} onCommit={(n) => patchA(selA.id, { start: n })} />
+            <NumField label="Recorte: inicio (s)" value={selA.inSec} onCommit={(n) => patchA(selA.id, { inSec: n })} />
+            <NumField label="Recorte: final (s)" value={selA.outSec} onCommit={(n) => patchA(selA.id, { outSec: n })} />
+            <label>
+              Volumen: {Math.round(selA.volume * 100)}%
+              <input type="range" min={0} max={100} value={Math.round(selA.volume * 100)} onChange={(e) => patchA(selA.id, { volume: Number(e.target.value) / 100 })} />
+            </label>
+          </div>
+        )}
+        {selT && (
+          <div className="ed-fields">
+            <label>
+              Texto
+              <textarea key={selT.id + selT.text} rows={2} defaultValue={selT.text} onBlur={(e) => { if (e.target.value !== selT.text && e.target.value.trim()) patchT(selT.id, { text: e.target.value }) }} />
+            </label>
+            <NumField label="Empieza en (s)" value={selT.start} onCommit={(n) => patchT(selT.id, { start: n })} />
+            <NumField label="Duracion (s)" value={selT.duration} onCommit={(n) => patchT(selT.id, { duration: n })} />
+            <NumField label="Tamano (% del alto)" value={selT.size} step={1} onCommit={(n) => patchT(selT.id, { size: n })} />
+            <NumField label="Posicion X (%)" value={selT.x} step={1} onCommit={(n) => patchT(selT.id, { x: n })} />
+            <NumField label="Posicion Y (%)" value={selT.y} step={1} onCommit={(n) => patchT(selT.id, { y: n })} />
+            <label>
+              Color
+              <input type="color" value={selT.color} onChange={(e) => patchT(selT.id, { color: e.target.value })} />
+            </label>
+            <label>
+              <span>Fondo</span>
+              <input type="checkbox" checked={selT.bg} onChange={(e) => patchT(selT.id, { bg: e.target.checked })} />
+            </label>
+          </div>
+        )}
+        {sel && (
+          <div className="ed-actions">
+            <button type="button" className="ed-btn" onClick={() => moveSel(-1)}>{sel.kind === 'v' ? 'Mover antes' : 'Adelantar 0,5 s'}</button>
+            <button type="button" className="ed-btn" onClick={() => moveSel(1)}>{sel.kind === 'v' ? 'Mover despues' : 'Retrasar 0,5 s'}</button>
+            <button type="button" className="ed-btn" onClick={splitSel}>Dividir en el cursor</button>
+            <button type="button" className="ed-btn" onClick={deleteSel}>Eliminar</button>
+          </div>
+        )}
       </div>
 
       <div className="ed-timeline">
@@ -96,23 +779,101 @@ export default function VideoEditorPage() {
             Zoom{' '}
             <input type="range" min={10} max={120} value={zoom} onChange={(e) => setZoom(Number(e.target.value))} aria-label="Zoom de la linea de tiempo" />
           </label>
-          <span>{zoom} px por segundo</span>
+          <span>{zoom} px por segundo. Haz clic en la regla para mover el cursor.</span>
         </div>
         <div className="ed-tl-scroll">
-          <div className="ed-tl-inner" style={{ width: width + 90 }}>
-            <div className="ed-ruler" style={{ width }}>
+          <div className="ed-tl-inner" style={{ width: span * zoom + 90 }}>
+            <div className="ed-playhead" style={{ left: 90 + t * zoom }} />
+            <div className="ed-ruler" style={{ width: span * zoom }} onClick={seekFromRuler}>
               {ticks.map((s) => (
-                <span key={s} className="ed-tick" style={{ left: s * zoom }}>{mmss(s)}</span>
+                <span key={s} className="ed-tick" style={{ left: s * zoom }}>{Math.floor(s / 60)}:{String(s % 60).padStart(2, '0')}</span>
               ))}
             </div>
-            {TRACKS.map((t) => (
-              <div key={t.id} className="ed-track" style={{ width }}>
-                <span className="ed-track-label">{t.label}</span>
+            {TRACKS.map((track) => (
+              <div key={track.id} className="ed-track" style={{ width: span * zoom }}>
+                <span className="ed-track-label">{track.label}</span>
+                {track.id === 'overlay' && <span className="ed-track-note">Imagenes superpuestas: pendiente</span>}
+                {track.id === 'video' &&
+                  project.vclips.map((c, i) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className={'ed-clip' + (sel?.id === c.id ? ' is-sel' : '')}
+                      style={{ left: starts[i] * zoom, width: Math.max(clipDuration(c) * zoom, 6) }}
+                      onClick={() => setSel({ kind: 'v', id: c.id })}
+                      title={mediaMap.get(c.mediaId)?.name}
+                    >
+                      {mediaMap.get(c.mediaId)?.name ?? 'Archivo eliminado'}
+                    </button>
+                  ))}
+                {track.id === 'text' &&
+                  project.texts.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className={'ed-clip ed-clip-t' + (sel?.id === c.id ? ' is-sel' : '')}
+                      style={{ left: c.start * zoom, width: Math.max(c.duration * zoom, 6) }}
+                      onClick={() => setSel({ kind: 't', id: c.id })}
+                    >
+                      {c.text}
+                    </button>
+                  ))}
+                {track.id === 'audio' &&
+                  project.aclips.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      className={'ed-clip ed-clip-a' + (sel?.id === c.id ? ' is-sel' : '')}
+                      style={{ left: c.start * zoom, width: Math.max(clipDuration(c) * zoom, 6) }}
+                      onClick={() => setSel({ kind: 'a', id: c.id })}
+                      title={mediaMap.get(c.mediaId)?.name}
+                    >
+                      {mediaMap.get(c.mediaId)?.name ?? 'Archivo eliminado'}
+                    </button>
+                  ))}
               </div>
             ))}
           </div>
         </div>
-        <p className="ed-empty">Las pistas estan vacias. Los clips se podran agregar desde la Fase 2.</p>
+      </div>
+
+      <div className="ed-panel">
+        <h2>Exportar</h2>
+        <div className="ed-fields">
+          <label>
+            Resolucion
+            <select value={shortSide} onChange={(e) => setShortSide(Number(e.target.value))} disabled={exporting}>
+              {resolutions.map((s) => (
+                <option key={s} value={s}>{s}p</option>
+              ))}
+            </select>
+          </label>
+          <span>Formato: MP4 (H.264 y AAC). Duracion: {fmt(total)}.</span>
+          <button type="button" className="ed-btn ed-btn-primary" onClick={handleExport} disabled={exporting || project.vclips.length === 0}>
+            Exportar video
+          </button>
+          {exporting && <button type="button" className="ed-btn" onClick={cancelExport}>Cancelar</button>}
+        </div>
+        {project.vclips.length === 0 && <p className="ed-empty">Agrega al menos un clip de video o imagen para exportar.</p>}
+        {expStage === 'preparing' && <p role="status">Preparando el motor. La primera vez puede tardar unos segundos.</p>}
+        {expStage === 'working' && (
+          <div role="status">
+            <progress value={progress} max={1} aria-label="Progreso de la exportacion" /> {Math.round(progress * 100)}%
+          </div>
+        )}
+        {expError && <p className="ed-error" role="alert">{expError}</p>}
+        {result && (
+          <div>
+            <video
+              src={result.url}
+              controls
+              style={{ maxWidth: '100%', maxHeight: 280, marginTop: 10 }}
+              onError={() => setExpError('El archivo exportado no se pudo reproducir en tu navegador. No lo descargues como definitivo.')}
+            />
+            <p>Peso del archivo: {formatBytes(result.size)}. Si pesa demasiado, descargalo y reducelo con el <Link to="/tools/video-compressor">compresor</Link>.</p>
+            <a className="ed-btn ed-btn-primary" href={result.url} download={result.name}>Descargar video</a>
+          </div>
+        )}
       </div>
     </section>
   )

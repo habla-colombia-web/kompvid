@@ -3,7 +3,7 @@ import type { ToolDefinition } from '../../core/tools/types'
 export const videoEditorTool: ToolDefinition = {
   id: 'video-editor',
   name: 'Editor de video - Kompvid Studio',
-  description: 'Edita tus videos desde el navegador. En construccion.',
+  description: 'Une clips, agrega texto y audio, y exporta tu video.',
   category: 'video',
   icon: 'video',
   route: '/editor-video',
