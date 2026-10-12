@@ -24,6 +24,8 @@ function fxChain(c: VClip, dur: number): { v: string; a: string } {
   const ct = (c.contrast ?? 100) / 100
   const s = (c.sat ?? 100) / 100
   if (b !== 0 || ct !== 1 || s !== 1) v += ',eq=brightness=' + b.toFixed(2) + ':contrast=' + ct.toFixed(2) + ':saturation=' + s.toFixed(2)
+  if ((c.blur ?? 0) > 0) v += ',gblur=sigma=' + (c.blur ?? 0).toFixed(1)
+  if ((c.vig ?? 0) > 0) v += ',vignette=angle=' + (1.2 - ((c.vig ?? 0) / 100) * 0.9).toFixed(2)
   const fi = Math.min(c.fadeIn ?? 0, dur / 2)
   const fo = Math.min(c.fadeOut ?? 0, dur / 2)
   if (fi > 0.01) {

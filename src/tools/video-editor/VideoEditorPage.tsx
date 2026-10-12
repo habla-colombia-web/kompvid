@@ -175,6 +175,27 @@ function textCss(s: { color: string; bg: boolean; boxColor?: string; radius?: nu
   }
 }
 
+const FILTERS = [
+  { id: 'orig', label: 'Original', b: 0, c: 100, s: 100 },
+  { id: 'bw', label: 'Blanco y negro', b: 0, c: 110, s: 0 },
+  { id: 'vivid', label: 'Vivo', b: 0, c: 110, s: 150 },
+  { id: 'faded', label: 'Desvaido', b: 5, c: 90, s: 60 },
+  { id: 'drama', label: 'Dramatico', b: -10, c: 140, s: 80 },
+  { id: 'bright', label: 'Brillante', b: 15, c: 105, s: 110 },
+]
+
+function RTabIco({ n }: { n: string }) {
+  const p = { width: 22, height: 22, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
+  switch (n) {
+    case 'edit': return (<svg {...p}><line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="17" x2="20" y2="17" /><circle cx="9" cy="7" r="2" /><circle cx="15" cy="17" r="2" /></svg>)
+    case 'color': return (<svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 3v18" /></svg>)
+    case 'fade': return (<svg {...p}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 12h18" /></svg>)
+    case 'audio': return (<svg {...p}><polygon points="4 9 8 9 13 5 13 19 8 15 4 15" /><path d="M16 9a4 4 0 0 1 0 6" /></svg>)
+    case 'filter': return (<svg {...p}><circle cx="9" cy="10" r="5" /><circle cx="15" cy="14" r="5" /></svg>)
+    default: return (<svg {...p}><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z" /></svg>)
+  }
+}
+
 type RailTab = 'media' | 'record' | 'library' | 'text' | 'trans'
 const RAIL: { id: RailTab; label: string }[] = [
   { id: 'media', label: 'Mi multimedia' },
@@ -232,7 +253,7 @@ export default function VideoEditorPage() {
   const [tab, setTab] = useState<RailTab>('media')
   const [trQ, setTrQ] = useState('')
   const [rOpen, setROpen] = useState(true)
-  const [rtab, setRtab] = useState<'edit' | 'color' | 'fade' | 'audio'>('edit')
+  const [rtab, setRtab] = useState<'edit' | 'color' | 'fade' | 'audio' | 'filter' | 'fx'>('edit')
   const [recMode, setRecMode] = useState<'camera' | 'screen' | 'mic' | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -1065,7 +1086,7 @@ export default function VideoEditorPage() {
   if (fxClip && fxClip.fadeOut && fxDur - fxPos < fxClip.fadeOut) fxOp = Math.min(fxOp, (fxDur - fxPos) / fxClip.fadeOut)
   const previewFx: React.CSSProperties = fxClip
     ? {
-        filter: 'brightness(' + (1 + (fxClip.bright ?? 0) / 100) + ') contrast(' + (fxClip.contrast ?? 100) / 100 + ') saturate(' + (fxClip.sat ?? 100) / 100 + ')',
+        filter: 'brightness(' + (1 + (fxClip.bright ?? 0) / 100) + ') contrast(' + (fxClip.contrast ?? 100) / 100 + ') saturate(' + (fxClip.sat ?? 100) / 100 + ')' + ((fxClip.blur ?? 0) > 0 ? ' blur(' + (fxClip.blur ?? 0) / 2 + 'px)' : ''),
         opacity: Math.max(0, Math.min(1, fxOp)),
       }
     : {}
@@ -1434,8 +1455,8 @@ export default function VideoEditorPage() {
         {!sel && <p className="ed-empty">Haz clic en un clip de la linea de tiempo para editarlo.</p>}
         {selV && (
           <nav className="ed-rtabs" aria-label="Secciones del clip">
-            {([['edit', 'Edicion'], ['color', 'Colores'], ['fade', 'Fundido'], ['audio', 'Audio']] as const).map(([id, lb]) => (
-              <button key={id} type="button" className={'ed-rtab' + (rtab === id ? ' is-on' : '')} onClick={() => setRtab(id)} aria-pressed={rtab === id}>{lb}</button>
+            {([['edit', 'Edicion'], ['color', 'Colores'], ['fade', 'Fundido'], ['audio', 'Audio'], ['filter', 'Filtros'], ['fx', 'Efectos']] as const).map(([id, lb]) => (
+              <button key={id} type="button" className={'ed-rtab' + (rtab === id ? ' is-on' : '')} onClick={() => setRtab(id)} aria-pressed={rtab === id}><RTabIco n={id} /><span>{lb}</span></button>
             ))}
           </nav>
         )}
@@ -1458,6 +1479,15 @@ export default function VideoEditorPage() {
                 <p className="ed-empty">Este clip no tiene audio propio.</p>
               )
             )}
+            {rtab === 'filter' && (
+              <div className="ed-presets">
+                {FILTERS.map((f) => (
+                  <button key={f.id} type="button" className="ed-preset" onClick={() => patchFx(selV.id, { bright: f.b, contrast: f.c, sat: f.s })}>{f.label}</button>
+                ))}
+              </div>
+            )}
+            {rtab === 'fx' && <NumField label="Desenfoque (0 a 20)" value={selV.blur ?? 0} step={1} onCommit={(n) => patchFx(selV.id, { blur: Math.min(20, Math.max(0, n)) })} />}
+            {rtab === 'fx' && <NumField label="Vineta (0 a 100)" value={selV.vig ?? 0} step={5} onCommit={(n) => patchFx(selV.id, { vig: Math.min(100, Math.max(0, n)) })} />}
             {rtab === 'fade' && selV.trans && (
               <>
                 <NumField label="Transicion al siguiente (s)" value={selV.trans.dur} step={0.1} onCommit={(n) => setTransDur(selV.id, n)} />
