@@ -175,6 +175,16 @@ export default function VideoCompressorPage() {
     setStage('ready')
   }
 
+  function handleDownload() {
+    window.setTimeout(() => {
+      releaseResult()
+      setFile(null)
+      setDuration(null)
+      setProgress(0)
+      setStage('idle')
+      setNotice('Descarga iniciada. El video ya se eliminó de la memoria de tu navegador.')
+    }, 3000)
+  }
   const saved = result && file ? file.size - result.size : 0
   const savedPct = result && file && file.size > 0 ? (saved / file.size) * 100 : 0
 
@@ -305,7 +315,7 @@ export default function VideoCompressorPage() {
                 : 'El resultado no es más pequeño que el original.'}
             </dd>
           </dl>
-          <a className="btn btn-primary" href={result.url} download={result.name}>
+          <a className="btn btn-primary" href={result.url} download={result.name} onClick={handleDownload}>
             Descargar video
           </a>
         </div>
