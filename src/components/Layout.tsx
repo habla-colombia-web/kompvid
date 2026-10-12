@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { PRODUCT } from '../config/product'
 import { useAuth } from '../core/auth/useAuth'
 import { signOut } from '../core/auth/authApi'
+import StaffLink from '../admin/StaffLink'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -56,6 +57,7 @@ export default function Layout() {
             onClick={handleNavClick}
           >
             <Link to="/pricing">Precios</Link>
+            <StaffLink />
             {!loading && session && (
               <>
                 <Link to="/account">Cuenta</Link>
