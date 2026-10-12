@@ -11,6 +11,7 @@ import { videoTargetSizeTool } from '../../tools/video-target-size'
 import { audioExtractorTool } from '../../tools/audio-extractor'
 import { audioTrimmerTool } from '../../tools/audio-trimmer'
 import { audioConverterTool } from '../../tools/audio-converter'
+import { videoEditorTool } from '../../tools/video-editor'
 
 export const tools: ToolDefinition[] = [
   videoCompressorTool,
@@ -25,6 +26,7 @@ export const tools: ToolDefinition[] = [
   audioExtractorTool,
   audioTrimmerTool,
   audioConverterTool,
+  videoEditorTool,
 ]
 
 export const getToolById = (id: string) => tools.find((t) => t.id === id)
