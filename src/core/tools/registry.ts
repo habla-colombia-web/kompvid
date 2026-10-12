@@ -6,6 +6,8 @@ import { imageResizerTool } from '../../tools/image-resizer'
 import { imageCropperTool } from '../../tools/image-cropper'
 import { imageConverterTool } from '../../tools/image-converter'
 import { videoThumbnailTool } from '../../tools/video-thumbnail'
+import { videoConverterTool } from '../../tools/video-converter'
+import { videoTargetSizeTool } from '../../tools/video-target-size'
 
 export const tools: ToolDefinition[] = [
   videoCompressorTool,
@@ -15,6 +17,8 @@ export const tools: ToolDefinition[] = [
   imageCropperTool,
   imageConverterTool,
   videoThumbnailTool,
+  videoConverterTool,
+  videoTargetSizeTool,
 ]
 
 export const getToolById = (id: string) => tools.find((t) => t.id === id)
