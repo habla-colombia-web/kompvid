@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { PRODUCT } from '../config/product'
 import { tools } from '../core/tools/registry'
+import './home.css'
 
 const STEPS = [
   { title: 'Elige tu video', text: 'Arrastra el archivo o selecciónalo desde tu dispositivo.' },
@@ -8,53 +8,48 @@ const STEPS = [
   { title: 'Descarga el resultado', text: 'Compara el antes y el después y guarda el archivo comprimido.' },
 ]
 
-function PlayIcon() {
+function ToolIcon({ id }: { id: string }) {
+  const isImage = id.includes('background') || id.includes('image')
   return (
-    <svg width="40" height="40" viewBox="0 0 44 44" aria-hidden="true">
-      <rect x="2" y="6" width="40" height="32" rx="8" fill="currentColor" opacity="0.12" />
-      <path d="M18 14.5v15l12-7.5z" fill="currentColor" />
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {isImage ? (
+        <><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="9" cy="9" r="1.6" /><path d="m21 15-5-5L5 21" /></>
+      ) : (
+        <><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M10 9.5v5l4.5-2.5z" /></>
+      )}
     </svg>
   )
 }
 
 export default function HomePage() {
-  const hasActiveTool = tools.some((t) => t.status === 'active')
-
   return (
     <>
-      <section className="wrap hero">
-        <div className="hero-copy">
-          <h1>{PRODUCT.tagline}</h1>
-          <p className="hero-sub">{PRODUCT.subtitle}</p>
-          <div className="hero-actions">
-            <Link className="btn btn-primary" to="/register">Crear cuenta</Link>
-            <Link className="btn btn-secondary" to="/pricing">Ver planes</Link>
-          </div>
-          {!hasActiveTool && (
-            <p className="hero-note">El compresor de video está en desarrollo.</p>
-          )}
-        </div>
-
-        <figure className="visual" aria-label="Ilustración de un video que reduce su tamaño">
-          <div className="visual-row">
-            <span className="visual-label">Original</span>
-            <div className="bar bar-original" />
-          </div>
-          <div className="visual-row">
-            <span className="visual-label">Comprimido</span>
-            <div className="bar bar-compressed" />
-          </div>
-          <figcaption>Ilustración del concepto, sin resultados reales.</figcaption>
-        </figure>
+      <section className="hm-section" id="herramientas">
+        <h2>Herramientas</h2>
+        <ul className="hm-tools">
+          {tools.map((tool) => (
+            <li key={tool.id} className="hm-tool">
+              <span className="hm-tool-icon"><ToolIcon id={tool.id} /></span>
+              <h3>{tool.name}</h3>
+              <p>{tool.description}</p>
+              {tool.status === 'active' ? (
+                <Link className="hm-btn" to={tool.route}>Abrir</Link>
+              ) : (
+                <span className="hm-soon">Próximamente</span>
+              )}
+            </li>
+          ))}
+        </ul>
       </section>
 
-      <section className="band" id="como-funciona">
-        <div className="wrap">
+      <section className="hm-band" id="como-funciona">
+        <div className="hm-inner">
           <h2>Cómo funciona</h2>
-          <ol className="steps">
+          <ol className="hm-steps">
             {STEPS.map((step, i) => (
               <li key={step.title}>
-                <span className="step-num">{i + 1}</span>
+                <span className="hm-num">{i + 1}</span>
                 <h3>{step.title}</h3>
                 <p>{step.text}</p>
               </li>
@@ -63,42 +58,16 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="wrap section" id="herramientas">
-        <div className="tools-grid">
+      <section className="hm-section">
+        <div className="hm-plans">
           <div>
-            <h2>Herramientas</h2>
-            <ul className="tool-list">
-              {tools.map((tool) => (
-                <li key={tool.id}>
-                  <div>
-                    <h3>{tool.name}</h3>
-                    <p>{tool.description}</p>
-                  </div>
-                  {tool.status === 'active' ? (
-                    <Link className="badge badge-on" to={tool.route}>Abrir</Link>
-                  ) : (
-                    <span className="badge">Próximamente</span>
-                  )}
-                </li>
-              ))}
-            </ul>
+            <h2>Empieza gratis</h2>
+            <p>Pasa a Pro cuando necesites más. Compara los planes y elige el tuyo.</p>
           </div>
-
-          <figure className="vz" aria-label="Ilustración de un video antes y después de comprimir">
-            <div className="vz-card">
-              <span className="vz-tag">Original</span>
-              <PlayIcon />
-              <div className="vz-bar"><span style={{ width: '100%' }} /></div>
-            </div>
-            <div className="vz-arrow" aria-hidden="true">&darr;</div>
-            <div className="vz-card vz-card-after">
-              <span className="vz-tag">Comprimido</span>
-              <PlayIcon />
-              <div className="vz-bar"><span style={{ width: '38%' }} /></div>
-              <span className="vz-badge">Menos peso</span>
-            </div>
-            <figcaption className="vz-caption">Ilustración de ejemplo. El ahorro real depende de cada video.</figcaption>
-          </figure>
+          <div className="hm-plans-actions">
+            <Link className="hm-btn hm-btn-solid" to="/pricing">Ver planes</Link>
+            <Link className="hm-btn" to="/register">Crear cuenta</Link>
+          </div>
         </div>
       </section>
     </>

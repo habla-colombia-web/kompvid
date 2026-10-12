@@ -226,3 +226,8 @@ body { overflow-x: clip; }
   .site-footer .wrap { flex-direction: column; }
 }
 /* Fin responsive y menu movil */
+
+/* kompvid-fullwidth */
+.wrap{max-width:none;margin-left:0;margin-right:0;padding-left:clamp(16px,4vw,64px);padding-right:clamp(16px,4vw,64px)}
+.auth-page{max-width:440px;margin-left:auto;margin-right:auto}
+.tool-page{max-width:760px;margin-left:auto;margin-right:auto}
