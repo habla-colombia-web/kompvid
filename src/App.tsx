@@ -5,6 +5,7 @@ import Layout from './components/Layout'
 import ProtectedRoute from './core/auth/ProtectedRoute'
 import { getActiveTools } from './core/tools/registry'
 import HomePage from './pages/HomePage'
+import HeroShowcase from './components/HeroShowcase'
 import PricingPage from './pages/PricingPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
@@ -34,7 +35,7 @@ export default function App() {
       </Route>
 
       <Route element={<Layout />}>
-        <Route index element={<HomePage />} />
+        <Route index element={<><HeroShowcase /><HomePage /></>} />
         <Route path="pricing" element={<PricingPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />
