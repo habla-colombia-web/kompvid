@@ -7,6 +7,7 @@ import { consumeUsage } from '../../core/usage/consumeUsage'
 import { cancelCompression, loadEngine } from '../video-compressor/ffmpegService'
 import { formatBytes } from '../video-compressor/utils'
 import { exportProject } from './exportService'
+import { deleteProject, listProjects, loadProject, saveProject, type MediaRef, type ProjectRow } from './projectService'
 import {
   CANVAS_FORMATS,
   EMPTY_PROJECT,
@@ -156,6 +157,11 @@ export default function VideoEditorPage() {
   const [progress, setProgress] = useState(0)
   const [expError, setExpError] = useState<string | null>(null)
   const [result, setResult] = useState<{ url: string; size: number; name: string } | null>(null)
+  const [projectId, setProjectId] = useState<string | null>(null)
+  const [saveState, setSaveState] = useState<'idle' | 'saving'>('idle')
+  const [saveMsg, setSaveMsg] = useState<string | null>(null)
+  const [projects, setProjects] = useState<ProjectRow[] | null>(null)
+  const [pendingRef, setPendingRef] = useState<MediaRef[]>([])
 
   const project = hist.present
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -304,7 +310,12 @@ export default function VideoEditorPage() {
         continue
       }
       try {
-        const item = await probe(file, kind)
+        let item = await probe(file, kind)
+        const ref = pendingRef.find((r) => r.name === file.name && r.size === file.size && r.kind === kind && !mediaRef.current.some((m) => m.id === r.id))
+        if (ref) {
+          item = { ...item, id: ref.id }
+          setPendingRef((prev) => prev.filter((r) => r.id !== ref.id))
+        }
         mediaRef.current = [...mediaRef.current, item]
         setMedia((prev) => [...prev, item])
       } catch {
@@ -572,6 +583,101 @@ export default function VideoEditorPage() {
     setNotice('Exportacion cancelada.')
   }
 
+  useEffect(() => {
+    let on = true
+    void listProjects().then((r) => {
+      if (on && !r.error) setProjects(r.rows)
+    })
+    return () => {
+      on = false
+    }
+  }, [])
+
+  async function refreshProjects(): Promise<ProjectRow[] | null> {
+    const r = await listProjects()
+    if (r.error) {
+      setSaveMsg(r.error)
+      return null
+    }
+    setProjects(r.rows)
+    return r.rows
+  }
+
+  async function handleSave(asNew: boolean) {
+    if (saveState === 'saving' || exporting) return
+    setSaveMsg(null)
+    setSaveState('saving')
+    const id = asNew ? null : projectId
+    const maxProjects = isPro ? 50 : 3
+    if (!id) {
+      const rows = await refreshProjects()
+      if (!rows) {
+        setSaveState('idle')
+        return
+      }
+      if (rows.length >= maxProjects) {
+        setSaveMsg('Tu plan permite hasta ' + maxProjects + ' proyectos guardados. Elimina uno para guardar otro.')
+        setSaveState('idle')
+        return
+      }
+    }
+    const refs: MediaRef[] = media.map((m) => ({ id: m.id, name: m.name, size: m.file.size, kind: m.kind }))
+    const r = await saveProject(id, name.trim().slice(0, 80) || 'Proyecto sin titulo', { project, media: refs })
+    if (r.error || !r.id) {
+      setSaveMsg(r.error ?? 'No se pudo guardar el proyecto.')
+    } else {
+      setProjectId(r.id)
+      setSaveMsg('Proyecto guardado.')
+      void refreshProjects()
+    }
+    setSaveState('idle')
+  }
+
+  async function handleOpen(id: string) {
+    if (!id || exporting) return
+    setSaveMsg(null)
+    setPlaying(false)
+    const r = await loadProject(id)
+    if (r.error || !r.row) {
+      setSaveMsg(r.error ?? 'No se pudo abrir el proyecto.')
+      return
+    }
+    const remap = new Map<string, string>()
+    const pending: MediaRef[] = []
+    for (const ref of r.row.data.media) {
+      const ex = mediaRef.current.find((m) => m.name === ref.name && m.file.size === ref.size && m.kind === ref.kind)
+      if (ex) remap.set(ref.id, ex.id)
+      else pending.push(ref)
+    }
+    const fix = (mid: string) => remap.get(mid) ?? mid
+    const p = r.row.data.project
+    const next: Project = {
+      ...EMPTY_PROJECT,
+      ...p,
+      vclips: p.vclips.map((c) => ({ ...c, mediaId: fix(c.mediaId) })),
+      aclips: p.aclips.map((c) => ({ ...c, mediaId: fix(c.mediaId) })),
+    }
+    setHist({ past: [], present: next, future: [] })
+    setName(r.row.name)
+    setProjectId(r.row.id)
+    setPendingRef(pending)
+    setSel(null)
+    setT(0)
+    setSaveMsg(pending.length > 0 ? 'Proyecto abierto. Importa de nuevo: ' + pending.map((x) => x.name).join(', ') : 'Proyecto abierto.')
+  }
+
+  async function handleDelete() {
+    if (!projectId || !window.confirm('Eliminar este proyecto guardado? No se puede deshacer.')) return
+    const r = await deleteProject(projectId)
+    if (r.error) {
+      setSaveMsg(r.error)
+      return
+    }
+    setProjectId(null)
+    setSaveMsg('Proyecto eliminado.')
+    void refreshProjects()
+  }
+
   const format = CANVAS_FORMATS.find((f) => f.id === project.format) ?? CANVAS_FORMATS[0]
   const lastText = project.texts.reduce((m, c) => Math.max(m, c.start + c.duration), 0)
   const lastAudio = project.aclips.reduce((m, c) => Math.max(m, c.start + clipDuration(c)), 0)
@@ -591,7 +697,7 @@ export default function VideoEditorPage() {
     <section className="wrap tool-page ed">
       <h1 className="page-title">Editor de video - Kompvid Studio</h1>
       <p className="ed-notice" role="status">
-        Tus archivos se procesan en tu dispositivo y no se suben a ningun servidor. Los proyectos aun no se guardan: si cierras la pagina se pierde el trabajo. La exportacion usa mucha memoria; con videos largos puede fallar en equipos modestos. Plan {isPro ? 'Pro' : 'Gratis'}: hasta {limits.maxSeconds} s y {limits.maxShortSide}p. Para solo reducir el peso de un video usa el <Link to="/tools/video-compressor">compresor</Link>.
+        Tus archivos se procesan en tu dispositivo y no se suben a ningun servidor. Guardar conserva la edicion, no los archivos: al abrir un proyecto vuelve a importar los mismos archivos. La exportacion usa mucha memoria; con videos largos puede fallar en equipos modestos. Plan {isPro ? 'Pro' : 'Gratis'}: hasta {limits.maxSeconds} s y {limits.maxShortSide}p. Para solo reducir el peso de un video usa el <Link to="/tools/video-compressor">compresor</Link>.
       </p>
 
       <div className="ed-top">
@@ -627,7 +733,18 @@ export default function VideoEditorPage() {
           <option value="fill">Rellenar (recortar bordes)</option>
         </select>
         <span className="ed-top-spacer" />
-        <span className="ed-save">Guardado: aun no disponible</span>
+        <button type="button" className="ed-btn" onClick={() => void handleSave(false)} disabled={saveState === 'saving' || exporting}>
+          {saveState === 'saving' ? 'Guardando...' : 'Guardar'}
+        </button>
+        <button type="button" className="ed-btn" onClick={() => void handleSave(true)} disabled={saveState === 'saving' || exporting}>Guardar como nuevo</button>
+        <select value="" onChange={(e) => void handleOpen(e.target.value)} aria-label="Abrir proyecto guardado">
+          <option value="">Abrir proyecto</option>
+          {(projects ?? []).map((p) => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+        {projectId && <button type="button" className="ed-btn" onClick={() => void handleDelete()}>Eliminar proyecto</button>}
+        {saveMsg && <span className="ed-save" role="status">{saveMsg}</span>}
         <button type="button" className="ed-btn" onClick={undo} disabled={hist.past.length === 0 || exporting}>Deshacer</button>
         <button type="button" className="ed-btn" onClick={redo} disabled={hist.future.length === 0 || exporting}>Rehacer</button>
       </div>
