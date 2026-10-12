@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import { getActiveTools } from '../core/tools/registry'
 import './hero-showcase.css'
 
-const IMG = '/hero.webp'
 const compressor = getActiveTools().find((t) => t.id === 'video-compressor')
 const TARGET = compressor ? compressor.route : '/register'
 
@@ -20,11 +19,11 @@ export default function HeroShowcase() {
 
       <div className="hs-stage">
         <figure className="hs-card">
-          <img src={IMG} alt="Ilustración del video original" loading="eager" />
+          <img src="/hero2.webp" alt="Ilustración del video original" loading="eager" />
           <figcaption className="hs-tag">Original</figcaption>
         </figure>
         <figure className="hs-card">
-          <img src={IMG} alt="Ilustración del video comprimido" loading="lazy" />
+          <img src="/hero.webp" alt="Ilustración del video comprimido" loading="lazy" />
           <figcaption className="hs-tag">Comprimido</figcaption>
           <span className="hs-badge">Menos peso</span>
         </figure>

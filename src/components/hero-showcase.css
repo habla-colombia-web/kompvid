@@ -23,3 +23,4 @@
   .hs-icon{left:50%;transform:translateX(-50%);bottom:auto;top:-30px;width:72px;height:72px;border-radius:18px}
   .hs-icon svg{width:44px;height:44px}
 }
+.hs-card:first-child img{object-position:10% center}
