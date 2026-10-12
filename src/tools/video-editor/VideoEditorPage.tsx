@@ -7,6 +7,7 @@ import { consumeUsage } from '../../core/usage/consumeUsage'
 import { cancelCompression, loadEngine } from '../video-compressor/ffmpegService'
 import { formatBytes } from '../video-compressor/utils'
 import { exportProject } from './exportService'
+import { loadEditorLimits, rowToLimits, type EditorLimits } from './limitsService'
 import { deleteProject, listProjects, loadProject, saveProject, type MediaRef, type ProjectRow } from './projectService'
 import {
   CANVAS_FORMATS,
@@ -139,7 +140,18 @@ function NumField(props: { label: string; value: number; step?: number; onCommit
 export default function VideoEditorPage() {
   const { plan } = usePlan()
   const isPro = plan === 'pro'
-  const limits = isPro ? LIMITS.pro : LIMITS.free
+  const [remote, setRemote] = useState<EditorLimits | null>(null)
+  const limits: EditorLimits = { ...(isPro ? LIMITS.pro : LIMITS.free), maxProjects: isPro ? 50 : 3, ...(remote ?? {}) }
+  useEffect(() => {
+    let on = true
+    void loadEditorLimits().then((r) => {
+      const row = r.rows.find((x) => x.plan === (isPro ? 'pro' : 'free'))
+      if (on && row) setRemote(rowToLimits(row))
+    })
+    return () => {
+      on = false
+    }
+  }, [isPro])
   const maxFileMB = isPro ? PRO_FILE_CAP_MB : PLANS.free.maxFileMB
 
   const [hist, setHist] = useState<Hist>({ past: [], present: EMPTY_PROJECT, future: [] })
@@ -557,7 +569,7 @@ export default function VideoEditorPage() {
         return
       }
       setExpStage('working')
-      const blob = await exportProject(project, mediaMap, { shortSide, crf: 23 }, setProgress)
+      const blob = await exportProject(project, mediaMap, { shortSide: Math.min(shortSide, limits.maxShortSide), crf: 23 }, setProgress)
       if (run !== runRef.current) return
       const url = URL.createObjectURL(blob)
       resultUrlRef.current = url
@@ -608,7 +620,7 @@ export default function VideoEditorPage() {
     setSaveMsg(null)
     setSaveState('saving')
     const id = asNew ? null : projectId
-    const maxProjects = isPro ? 50 : 3
+    const maxProjects = limits.maxProjects
     if (!id) {
       const rows = await refreshProjects()
       if (!rows) {

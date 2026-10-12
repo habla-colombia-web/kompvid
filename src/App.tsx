@@ -17,6 +17,7 @@ import NotFoundPage from './pages/NotFoundPage'
 import AdminRoute from './admin/AdminRoute'
 import AdminLayout from './admin/AdminLayout'
 import AdminDashboardPage from './admin/AdminDashboardPage'
+import AdminLimitsPage from './admin/AdminLimitsPage'
 import AdminPlaceholderPage from './admin/AdminPlaceholderPage'
 
 // Solo las herramientas con estado "active" reciben ruta.
@@ -31,6 +32,7 @@ export default function App() {
       <Route path="admin" element={<AdminRoute />}>
         <Route element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />
+          <Route path="herramientas" element={<AdminLimitsPage />} />
           <Route path=":section" element={<AdminPlaceholderPage />} />
         </Route>
       </Route>
