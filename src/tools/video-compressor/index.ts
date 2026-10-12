@@ -1,4 +1,4 @@
-﻿import type { ToolDefinition } from '../../core/tools/types'
+import type { ToolDefinition } from '../../core/tools/types'
 
 export const videoCompressorTool: ToolDefinition = {
   id: 'video-compressor',
@@ -7,7 +7,7 @@ export const videoCompressorTool: ToolDefinition = {
   category: 'video',
   icon: 'video',
   route: '/tools/video-compressor',
-  status: 'coming-soon',
+  status: 'active',
   requiredPlan: 'free',
   loadComponent: () => import('./VideoCompressorPage'),
 }
