@@ -171,6 +171,8 @@ export default function VideoEditorPage() {
   const [result, setResult] = useState<{ url: string; size: number; name: string } | null>(null)
   const [projectId, setProjectId] = useState<string | null>(null)
   const [dropAt, setDropAt] = useState<number | null>(null)
+  const [thumbs, setThumbs] = useState<Record<string, string>>({})
+  const thumbReq = useRef(new Set<string>())
   const scrollRef = useRef<HTMLDivElement>(null)
   const dragKind = useRef<MediaKind>('video')
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -653,6 +655,31 @@ export default function VideoEditorPage() {
     })
   }
 
+  function thumbStyle(mid: string): React.CSSProperties {
+    const m = mediaMap.get(mid)
+    const u = m?.kind === 'image' ? m.url : thumbs[mid]
+    return u ? { backgroundImage: 'url(' + u + ')' } : {}
+  }
+
+  function startTextDown(e: React.PointerEvent<HTMLDivElement>, id: string) {
+    const r = e.currentTarget.getBoundingClientRect()
+    const lx = e.clientX - r.left
+    const ly = e.clientY - r.top
+    const z = 14
+    const sx = lx < z ? -1 : r.width - lx < z ? 1 : 0
+    const sy = ly < z ? -1 : r.height - ly < z ? 1 : 0
+    const c = project.texts.find((x) => x.id === id)
+    const cvH = e.currentTarget.parentElement?.getBoundingClientRect().height
+    if (exporting || sel?.id !== id || sx === 0 || sy === 0 || !c || !cvH) { startTextDrag(e, id); return }
+    e.preventDefault()
+    const base = project
+    beginDrag(e.clientX, e.clientY, (dx, dy) => {
+      const size = Math.min(30, Math.max(2, c.size + (((sx * dx + sy * dy) / 2) / cvH) * 100))
+      const next = { ...base, texts: base.texts.map((x) => (x.id === id ? { ...x, size } : x)) }
+      setHist((h) => ({ ...h, present: next }))
+    })
+  }
+
   function startScrub(e: React.PointerEvent<HTMLDivElement>) {
     setPlaying(false)
     const rect = e.currentTarget.getBoundingClientRect()
@@ -858,6 +885,33 @@ export default function VideoEditorPage() {
     void refreshProjects()
   }
 
+  useEffect(() => {
+    media.forEach((m) => {
+      if (m.kind !== 'video' || thumbReq.current.has(m.id)) return
+      thumbReq.current.add(m.id)
+      const v = document.createElement('video')
+      v.muted = true
+      v.preload = 'auto'
+      v.src = m.url
+      const done = () => { v.removeAttribute('src'); v.load() }
+      v.addEventListener('loadeddata', () => { try { v.currentTime = Math.min(0.5, m.duration / 2) } catch { done() } }, { once: true })
+      v.addEventListener('seeked', () => {
+        try {
+          const cv = document.createElement('canvas')
+          cv.width = 160
+          cv.height = Math.max(2, Math.round((160 * (m.height || 9)) / (m.width || 16)))
+          const cx = cv.getContext('2d')
+          if (cx) {
+            cx.drawImage(v, 0, 0, cv.width, cv.height)
+            setThumbs((p) => ({ ...p, [m.id]: cv.toDataURL('image/jpeg', 0.6) }))
+          }
+        } catch { /* sin miniatura */ }
+        done()
+      }, { once: true })
+      v.addEventListener('error', done, { once: true })
+    })
+  }, [media])
+
   const format = CANVAS_FORMATS.find((f) => f.id === project.format) ?? CANVAS_FORMATS[0]
   const lastText = project.texts.reduce((m, c) => Math.max(m, c.start + c.duration), 0)
   const lastAudio = project.aclips.reduce((m, c) => Math.max(m, c.start + clipDuration(c)), 0)
@@ -999,7 +1053,7 @@ export default function VideoEditorPage() {
 
         <div className="ed-preview">
           <div className="ed-stage">
-            <div className="ed-canvas" style={{ aspectRatio: format.ratioW + ' / ' + format.ratioH }}>
+            <div className="ed-canvas" style={{ aspectRatio: format.ratioW + ' / ' + format.ratioH, '--ar': format.ratioW / format.ratioH } as React.CSSProperties}>
               <video
                 ref={videoRef}
                 muted={!project.keepVideoAudio}
@@ -1015,7 +1069,7 @@ export default function VideoEditorPage() {
               {liveTexts.map((c) => (
                 <div
                   key={c.id}
-                  className="ed-text-live" onPointerDown={(e) => startTextDrag(e, c.id)}
+                  className={'ed-text-live' + (sel?.id === c.id ? ' is-sel' : '')} onPointerDown={(e) => startTextDown(e, c.id)}
                   style={{
                     left: c.x + '%',
                     top: c.y + '%',
@@ -1100,7 +1154,7 @@ export default function VideoEditorPage() {
                       key={c.id}
                       type="button"
                       className={'ed-clip' + (sel?.id === c.id ? ' is-sel' : '')}
-                      style={{ left: starts[i] * zoom, width: Math.max(clipDuration(c) * zoom, 6) }}
+                      style={{ left: starts[i] * zoom, width: Math.max(clipDuration(c) * zoom, 6), ...thumbStyle(c.mediaId) }}
                       onPointerDown={(e) => startDrag(e, 'v', c.id)}
                       title={mediaMap.get(c.mediaId)?.name}
                     >

@@ -153,3 +153,15 @@ section.ed.wrap .ed-panel h2 { margin:0 0 2px; font-size:0.8rem; }
 .ed-tl-bar input[type="range"] { width: 120px; }
 .ed-time-badge { position: absolute; top: 3px; left: 4px; padding: 0 5px; border-radius: 4px; background: #ef4444; color: #fff; font-size: 0.65rem; line-height: 1.4; white-space: nowrap; pointer-events: none; }
 .ed-drop-line { position: absolute; top: 0; bottom: 0; width: 3px; margin-left: -1px; background: #7c3aed; box-shadow: 0 0 6px #7c3aed; pointer-events: none; z-index: 4; }
+/* Visor proporcional, controles centrados, miniaturas, tiradores */
+section.ed.wrap .ed-stage { container-type: size; display: flex; align-items: center; justify-content: center; padding: 6px; min-height: 240px; }
+section.ed.wrap .ed-canvas { height: auto; max-height: none; max-width: none; width: min(100cqw, calc(100cqh * var(--ar, 1.7778))); }
+section.ed.wrap .ed-controls { justify-content: center; }
+section.ed.wrap .ed-timeline { max-height: 190px; }
+section.ed.wrap .ed-clip { background-size: auto 100%; background-repeat: repeat-x; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
+.ed-text-live.is-sel { outline: 2px solid #7c3aed; }
+.ed-text-live.is-sel::before { content: ''; position: absolute; inset: -5px; pointer-events: none; background:
+  linear-gradient(#7c3aed, #7c3aed) 0 0 / 10px 10px no-repeat,
+  linear-gradient(#7c3aed, #7c3aed) 100% 0 / 10px 10px no-repeat,
+  linear-gradient(#7c3aed, #7c3aed) 0 100% / 10px 10px no-repeat,
+  linear-gradient(#7c3aed, #7c3aed) 100% 100% / 10px 10px no-repeat; }
