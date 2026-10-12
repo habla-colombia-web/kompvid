@@ -73,6 +73,12 @@ export interface TextClip {
   size: number
   color: string
   bg: boolean
+  boxColor?: string
+  radius?: number
+  stroke?: number
+  strokeColor?: string
+  shadowColor?: string
+  font?: string
   x: number
   y: number
 }
@@ -168,3 +174,34 @@ export function canvasSize(format: CanvasFormatId, shortSide: number): { w: numb
   if (f.ratioW >= f.ratioH) return { w: even((shortSide * f.ratioW) / f.ratioH), h: shortSide }
   return { w: shortSide, h: even((shortSide * f.ratioH) / f.ratioW) }
 }
+export interface TextStyleDef {
+  id: string
+  label: string
+  group: 'styles' | 'titles'
+  text: string
+  color: string
+  bg: boolean
+  boxColor?: string
+  radius?: number
+  stroke?: number
+  strokeColor?: string
+  shadowColor?: string
+  font?: string
+  size?: number
+  y?: number
+}
+
+export const TEXT_STYLES: TextStyleDef[] = [
+  { id: 'creator', label: 'Creator', group: 'styles', text: 'CREATOR', color: '#ffffff', bg: false, stroke: 0.14, strokeColor: '#000000' },
+  { id: 'textbox', label: 'Text box', group: 'styles', text: 'Text box', color: '#ffffff', bg: true, boxColor: '#000000' },
+  { id: 'pride', label: 'Pride', group: 'styles', text: 'Pride', color: '#ffffff', bg: false, stroke: 0.1, strokeColor: '#6b5bd2', shadowColor: '#ff8a3d' },
+  { id: 'button', label: 'Button', group: 'styles', text: 'Button', color: '#111111', bg: true, boxColor: '#ffffff', radius: 0.7 },
+  { id: 'bubble', label: 'Bubble', group: 'styles', text: 'Bubble', color: '#b6ff3b', bg: false, stroke: 0.12, strokeColor: '#2f4a0b' },
+  { id: 'retro', label: 'Retro', group: 'styles', text: 'RETRO', color: '#1a1a1a', bg: false, shadowColor: '#f26b21', font: 'Impact, sans-serif' },
+  { id: 'molon', label: 'Molon', group: 'titles', text: 'MOLON', color: '#ffffff', bg: false, shadowColor: '#ff3b6b' },
+  { id: 'fundido', label: 'Fundido', group: 'titles', text: 'Fundido', color: '#ffffff', bg: false, stroke: 0.04, strokeColor: '#000000' },
+  { id: 'marea', label: 'Marea', group: 'titles', text: 'MAREA', color: '#ffffff', bg: false, font: 'Georgia, serif' },
+  { id: 'funky', label: 'Funky', group: 'titles', text: 'Titulo', color: '#ffffff', bg: true, boxColor: '#5b3fd4', radius: 0.1 },
+  { id: 'moderno', label: 'Moderno', group: 'titles', text: 'Titulo', color: '#ffffff', bg: true, boxColor: '#3a2be0' },
+  { id: 'subtitulo', label: 'Subtitulo', group: 'titles', text: 'Subtitulo', color: '#ffffff', bg: false, stroke: 0.08, strokeColor: '#000000', size: 5, y: 90 },
+]

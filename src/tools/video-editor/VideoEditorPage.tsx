@@ -28,6 +28,8 @@ import {
   type TextClip,
   type VClip,
   type TransDef,
+  type TextStyleDef,
+  TEXT_STYLES,
 } from './types'
 
 const LIMITS = {
@@ -158,6 +160,18 @@ function Ico({ n }: { n: 'camera' | 'screen' | 'mic' | 'text' | 'library' | 'plu
     case 'plus': return (<svg {...p}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>)
     case 'trash': return (<svg {...p}><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14H6L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V3h6v3" /></svg>)
     default: return (<svg {...p}><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>)
+  }
+}
+
+function textCss(s: { color: string; bg: boolean; boxColor?: string; radius?: number; stroke?: number; strokeColor?: string; shadowColor?: string; font?: string }): React.CSSProperties {
+  return {
+    color: s.color,
+    background: s.bg ? (s.boxColor ?? 'rgba(0,0,0,0.6)') : 'transparent',
+    borderRadius: s.radius ? s.radius + 'em' : undefined,
+    WebkitTextStroke: s.stroke && s.strokeColor ? s.stroke + 'em ' + s.strokeColor : undefined,
+    paintOrder: 'stroke fill',
+    textShadow: s.shadowColor ? '0.06em 0.06em 0 ' + s.shadowColor : undefined,
+    fontFamily: s.font,
   }
 }
 
@@ -464,13 +478,15 @@ export default function VideoEditorPage() {
     setSel({ kind: 'v', id: clip.id })
   }
 
-  function addText() {
+  function addText(sd?: TextStyleDef) {
     setNotice(null)
     if (project.texts.length >= limits.maxTexts) {
       setNotice('Tu plan permite hasta ' + limits.maxTexts + ' textos.')
       return
     }
-    const tc: TextClip = { id: uid(), text: 'Texto', start: Math.min(t, total), duration: 3, size: 8, color: '#ffffff', bg: true, x: 50, y: 85 }
+    const tc: TextClip = sd
+      ? { id: uid(), text: sd.text, start: Math.min(t, total), duration: 3, size: sd.size ?? 8, color: sd.color, bg: sd.bg, boxColor: sd.boxColor, radius: sd.radius, stroke: sd.stroke, strokeColor: sd.strokeColor, shadowColor: sd.shadowColor, font: sd.font, x: 50, y: sd.y ?? 85 }
+      : { id: uid(), text: 'Texto', start: Math.min(t, total), duration: 3, size: 8, color: '#ffffff', bg: true, x: 50, y: 85 }
     commit((p) => ({ ...p, texts: [...p.texts, tc] }))
     setSel({ kind: 't', id: tc.id })
   }
@@ -1225,8 +1241,20 @@ export default function VideoEditorPage() {
             {tab === 'text' && (
               <>
                 <h2>Texto</h2>
-                <button type="button" className="ed-btn ed-side-act" onClick={addText}><Ico n="text" /> Agregar texto</button>
+                <button type="button" className="ed-btn ed-side-act" onClick={() => addText()}><Ico n="text" /> Agregar texto</button>
                 <p className="ed-empty">Arrastra el texto en el visor o en la linea de tiempo.</p>
+                {(['styles', 'titles'] as const).map((g) => (
+                  <div key={g}>
+                    <h3 className="ed-tr-h">{g === 'styles' ? 'Estilos de texto' : 'Titulos'}</h3>
+                    <div className="ed-trs">
+                      {TEXT_STYLES.filter((x) => x.group === g).map((x) => (
+                        <button key={x.id} type="button" className="ed-tx" onClick={() => addText(x)} title={x.label}>
+                          <span className="ed-tx-thumb"><span style={textCss(x)}>{x.text}</span></span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </>
             )}
             {tab === 'trans' && (
@@ -1281,7 +1309,7 @@ export default function VideoEditorPage() {
                     transform: 'translate(-' + c.x + '%, -' + c.y + '%)',
                     fontSize: c.size + 'cqh',
                     color: c.color,
-                    background: c.bg ? 'rgba(0,0,0,0.6)' : 'transparent',
+                    ...textCss(c),
                   }}
                 >
                   {c.text}

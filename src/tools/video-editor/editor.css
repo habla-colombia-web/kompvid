@@ -240,3 +240,8 @@ section.ed.wrap .ed-side.ed-side2 { flex-direction: row; gap: 0; padding: 0; ove
 @keyframes edTrBlack { 0% { opacity: 0; filter: brightness(0); } 50% { opacity: 1; filter: brightness(0); } 100% { opacity: 1; filter: brightness(1); } }
 @keyframes edTrWhite { 0% { opacity: 0; filter: brightness(4); } 50% { opacity: 1; filter: brightness(4); } 100% { opacity: 1; filter: brightness(1); } }
 .ed-clip.has-trans::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: var(--tw); background: rgba(255, 255, 255, 0.35); border-left: 2px solid var(--ac); pointer-events: none; z-index: 2; }
+/* Estilos de texto */
+.ed-tx { padding: 0; border: 0; background: transparent; cursor: pointer; min-width: 0; }
+.ed-tx-thumb { display: flex; align-items: center; justify-content: center; aspect-ratio: 1 / 1; border-radius: 8px; background: #111; overflow: hidden; font-size: 1.05rem; font-weight: bold; text-align: center; }
+.ed-tx:hover .ed-tx-thumb { outline: 2px solid var(--ac); }
+.ed-tx-thumb span { padding: 0.2em 0.35em; max-width: 100%; }

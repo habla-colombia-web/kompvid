@@ -47,7 +47,7 @@ async function renderTextPng(t: TextClip, outH: number): Promise<Uint8Array> {
   const px = Math.max(8, Math.round((t.size / 100) * outH))
   const pad = Math.round(px * 0.3)
   const lines = t.text.split('\n')
-  const font = 'bold ' + px + 'px sans-serif'
+  const font = 'bold ' + px + 'px ' + (t.font ?? 'sans-serif')
   const probe = document.createElement('canvas').getContext('2d')
   if (!probe) throw new Error('Tu navegador no pudo preparar el lienzo de texto.')
   probe.font = font
@@ -61,14 +61,35 @@ async function renderTextPng(t: TextClip, outH: number): Promise<Uint8Array> {
   const ctx = canvas.getContext('2d')
   if (!ctx) throw new Error('Tu navegador no pudo preparar el lienzo de texto.')
   if (t.bg) {
-    ctx.fillStyle = 'rgba(0,0,0,0.6)'
-    ctx.fillRect(0, 0, w, h)
+    ctx.fillStyle = t.boxColor ?? 'rgba(0,0,0,0.6)'
+    const rr = Math.min((t.radius ?? 0) * px, h / 2, w / 2)
+    ctx.beginPath()
+    ctx.moveTo(rr, 0)
+    ctx.arcTo(w, 0, w, h, rr)
+    ctx.arcTo(w, h, 0, h, rr)
+    ctx.arcTo(0, h, 0, 0, rr)
+    ctx.arcTo(0, 0, w, 0, rr)
+    ctx.closePath()
+    ctx.fill()
   }
   ctx.font = font
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillStyle = t.color
-  lines.forEach((l, i) => ctx.fillText(l, w / 2, pad + lineH * i + lineH / 2))
+  ctx.lineJoin = 'round'
+  lines.forEach((l, i) => {
+    const y = pad + lineH * i + lineH / 2
+    if (t.shadowColor) {
+      ctx.fillStyle = t.shadowColor
+      ctx.fillText(l, w / 2 + px * 0.06, y + px * 0.06)
+    }
+    if (t.stroke && t.strokeColor) {
+      ctx.lineWidth = t.stroke * px
+      ctx.strokeStyle = t.strokeColor
+      ctx.strokeText(l, w / 2, y)
+    }
+    ctx.fillStyle = t.color
+    ctx.fillText(l, w / 2, y)
+  })
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
   canvas.width = 0
   canvas.height = 0
