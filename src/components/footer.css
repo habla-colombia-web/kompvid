@@ -4,17 +4,19 @@ footer.site-footer *{box-sizing:border-box}
 .sf-brand{display:inline-flex;align-items:center;gap:12px;align-self:flex-start;color:#fff;text-decoration:none;font-weight:700;font-size:1.5rem}
 .sf-logo{display:grid;place-items:center;width:44px;height:44px;background:#fff;border-radius:12px}
 .sf-logo img{display:block}
-.sf-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:32px;margin:36px 0}
+.sf-cols{display:grid;grid-template-columns:repeat(4,1fr);gap:32px;margin:28px 0 36px}
 .sf-cols h2{margin:0 0 20px;font-size:1.05rem;font-weight:700;color:#fff}
 .sf-cols nav{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
 .sf-cols a{color:#e4e0f7;text-decoration:none;font-size:.98rem}
 .sf-cols a:hover,.sf-cols a:focus-visible{color:#fff;text-decoration:underline}
+.sf-soon{color:#9d97c9;font-size:.98rem}
 .sf-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
 .sf-social{display:flex;gap:12px;flex-wrap:wrap}
-.sf-social a{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#fff;color:#0a0030}
+.sf-social a,.sf-off{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:#fff;color:#0a0030}
 .sf-social a:hover{background:#d9d3ff}
-.sf-pills{display:flex;gap:10px}
-.sf-pill{display:inline-flex;align-items:center;padding:9px 18px;border-radius:999px;background:#fff;color:#0a0030;font-weight:600;font-size:.95rem}
+.sf-pills{display:flex;gap:10px;flex-wrap:wrap}
+.sf-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 18px;border-radius:999px;background:#fff;color:#0a0030;font-weight:600;font-size:.95rem}
+.sf-flag{display:block}
 .sf-stores{display:flex;gap:12px;flex-wrap:wrap;margin-top:32px}
 .sf-store{display:flex;flex-direction:column;padding:8px 14px;border:1px solid rgba(255,255,255,.3);border-radius:10px;color:#e4e0f7;line-height:1.2}
 .sf-store small{font-size:.65rem;opacity:.8}
@@ -22,12 +24,15 @@ footer.site-footer *{box-sizing:border-box}
 .sf-bottom{margin-top:28px;padding-top:20px;border-top:1px solid rgba(255,255,255,.14);font-size:.88rem;color:#9d97c9}
 .sf-bottom p{margin:0}
 
+@media (max-width:900px){
+  .sf-cols{grid-template-columns:repeat(2,1fr)}
+}
 @media (max-width:640px){
   .sf-wrap{align-items:center;text-align:center}
   .sf-brand{order:1;align-self:center}
   .sf-stores{order:2;justify-content:center;margin:28px 0 0}
   .sf-row{order:3;flex-direction:column;justify-content:center;margin-top:20px}
-  .sf-social{justify-content:center}
+  .sf-social,.sf-pills{justify-content:center}
   .sf-cols{order:4;grid-template-columns:1fr;gap:28px;margin:28px 0}
   .sf-cols nav{align-items:center}
   .sf-bottom{order:5;width:100%;margin-top:8px}
