@@ -81,7 +81,7 @@ export default function ImageCropperPage() {
       title="Recortar imagen"
       lead="Arrastra sobre la imagen para elegir el area."
       actionLabel="Recortar imagen"
-      requiredPlan="pro"
+      requiredPlan="free"
       suffix="recortada"
       onImageChange={() => setSel(null)}
       validate={() =>

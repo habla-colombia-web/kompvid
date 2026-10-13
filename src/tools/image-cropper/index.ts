@@ -8,6 +8,6 @@ export const imageCropperTool: ToolDefinition = {
   icon: 'image',
   route: '/tools/image-cropper',
   status: 'active',
-  requiredPlan: 'pro',
+  requiredPlan: 'free',
   loadComponent: () => import('./ImageCropperPage'),
 }

@@ -8,6 +8,6 @@ export const videoEditorTool: ToolDefinition = {
   icon: 'video',
   route: '/editor-video',
   status: 'active',
-  requiredPlan: 'free',
+  requiredPlan: 'pro',
   loadComponent: () => import('./VideoEditorPage'),
 }
