@@ -296,3 +296,9 @@ section.ed.wrap .ed-main.ed-rhide { grid-template-columns: 300px minmax(0, 1fr) 
 /* Fundido y Audio */
 .ed-slider-row { display: flex; justify-content: space-between; align-items: center; }
 .ed-slider-row b { font-weight: 500; padding: 1px 8px; border: 1px solid var(--bd); border-radius: 6px; }
+/* Imagenes superpuestas */
+.ed-ovdrop { position: absolute; inset: 0; }
+.ed-clip-o { background-color: #fbcfe8; border-color: #db2777; color: #500724; background-size: auto 100%; }
+.ed-ov-live { position: absolute; cursor: move; touch-action: none; user-select: none; pointer-events: auto; object-fit: contain; }
+.ed-ov-live.is-sel { outline: 2px solid #7c3aed; }
+.ed-ov-live.is-sel::after { content: ''; position: absolute; inset: 0; pointer-events: none; }

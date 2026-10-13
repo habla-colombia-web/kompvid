@@ -98,6 +98,17 @@ export interface AClip {
   volume: number
 }
 
+export interface OClip {
+  id: string
+  mediaId: string
+  start: number
+  duration: number
+  x: number
+  y: number
+  w: number
+  opac: number
+}
+
 export interface Project {
   format: CanvasFormatId
   fit: 'fit' | 'fill'
@@ -105,6 +116,7 @@ export interface Project {
   vclips: VClip[]
   texts: TextClip[]
   aclips: AClip[]
+  overlays?: OClip[]
 }
 
 export const EMPTY_PROJECT: Project = {

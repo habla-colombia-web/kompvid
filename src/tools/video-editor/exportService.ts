@@ -185,6 +185,25 @@ export async function exportProject(
     filters.push('[' + curA + ']anull[ac]')
 
     let vLabel = 'vc'
+    let oj = 0
+    for (const o of project.overlays ?? []) {
+      const om = media.get(o.mediaId)
+      if (!om || om.kind !== 'image' || o.start >= total) continue
+      const oname = await ensure(om)
+      args.push('-loop', '1', '-t', total.toFixed(3), '-i', oname)
+      const os = Math.max(0, o.start)
+      const oe = Math.min(total, o.start + o.duration)
+      const ow = even(Math.max(2, Math.round((w * o.w) / 100)))
+      const oa = 1 - (o.opac ?? 0) / 100
+      filters.push('[' + idx + ':v]scale=' + ow + ':-2,format=rgba' + (oa < 0.999 ? ',colorchannelmixer=aa=' + oa.toFixed(2) : '') + '[ov' + oj + ']')
+      filters.push(
+        '[' + vLabel + '][ov' + oj + ']overlay=x=(W-w)*' + (o.x / 100).toFixed(3) + ':y=(H-h)*' + (o.y / 100).toFixed(3) +
+          ":enable='between(t," + os.toFixed(3) + ',' + oe.toFixed(3) + ")'[vo" + oj + ']',
+      )
+      vLabel = 'vo' + oj
+      idx++
+      oj++
+    }
     let k = 0
     for (const t of project.texts) {
       if (t.start >= total || !t.text.trim()) continue

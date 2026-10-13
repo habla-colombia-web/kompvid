@@ -59,7 +59,8 @@ interface Hist {
   future: Project[]
 }
 
-type Sel = { kind: 'v' | 't' | 'a'; id: string } | null
+type Sel = { kind: 'v' | 't' | 'a' | 'o'; id: string } | null
+type OClip = NonNullable<Project['overlays']>[number]
 
 function fmt(sec: number): string {
   const s = Math.max(0, sec)
@@ -509,6 +510,7 @@ export default function VideoEditorPage() {
       ...p,
       vclips: p.vclips.filter((c) => c.mediaId !== id),
       aclips: p.aclips.filter((c) => c.mediaId !== id),
+      overlays: (p.overlays ?? []).filter((c) => c.mediaId !== id),
     }))
     URL.revokeObjectURL(m.url)
     setMedia((prev) => prev.filter((x) => x.id !== id))
@@ -663,6 +665,7 @@ export default function VideoEditorPage() {
     setPlaying(false)
     if (sel.kind === 'v') commit((p) => ({ ...p, vclips: p.vclips.filter((c) => c.id !== sel.id) }))
     else if (sel.kind === 'a') commit((p) => ({ ...p, aclips: p.aclips.filter((c) => c.id !== sel.id) }))
+    else if (sel.kind === 'o') commit((p) => ({ ...p, overlays: (p.overlays ?? []).filter((c) => c.id !== sel.id) }))
     else commit((p) => ({ ...p, texts: p.texts.filter((c) => c.id !== sel.id) }))
     setSel(null)
   }
@@ -828,6 +831,104 @@ export default function VideoEditorPage() {
       const size = Math.min(30, Math.max(2, c.size + (((sx * dx + sy * dy) / 2) / cvH) * 100))
       const next = { ...base, texts: base.texts.map((x) => (x.id === id ? { ...x, size } : x)) }
       setHist((h) => ({ ...h, present: next }))
+    })
+  }
+
+  function addOverlay(m: MediaItem, atSec: number) {
+    setNotice(null)
+    if ((project.overlays ?? []).length >= limits.maxTexts) {
+      setNotice('Tu plan permite hasta ' + limits.maxTexts + ' imagenes superpuestas.')
+      return
+    }
+    const o: OClip = { id: uid(), mediaId: m.id, start: Math.max(0, atSec), duration: 5, x: 50, y: 50, w: 30, opac: 0 }
+    commit((p) => ({ ...p, overlays: [...(p.overlays ?? []), o] }))
+    setSel({ kind: 'o', id: o.id })
+  }
+
+  function patchO(id: string, patch: Partial<OClip>) {
+    commit((p) => ({
+      ...p,
+      overlays: (p.overlays ?? []).map((c) => {
+        if (c.id !== id) return c
+        const n = { ...c, ...patch }
+        n.start = Math.max(0, n.start)
+        n.duration = Math.max(0.2, n.duration)
+        n.w = Math.min(100, Math.max(5, n.w))
+        n.x = Math.min(100, Math.max(0, n.x))
+        n.y = Math.min(100, Math.max(0, n.y))
+        n.opac = Math.min(100, Math.max(0, n.opac))
+        return n
+      }),
+    }))
+  }
+
+  function dropOverlay(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    e.stopPropagation()
+    setDropAt(null)
+    if (e.dataTransfer.files.length > 0) { void handleFiles(e.dataTransfer.files); return }
+    const m = mediaMap.get(e.dataTransfer.getData('text/kompvid-media'))
+    if (!m) return
+    if (m.kind !== 'image') { setNotice('Solo se pueden superponer imagenes en esta pista.'); return }
+    const r = e.currentTarget.getBoundingClientRect()
+    addOverlay(m, Math.max(0, (e.clientX - r.left) / zoom))
+  }
+
+  function startOverlayDrag(e: React.PointerEvent<HTMLButtonElement>, id: string) {
+    if (exporting) return
+    e.preventDefault()
+    setSel({ kind: 'o', id })
+    const rect = e.currentTarget.getBoundingClientRect()
+    const zone = Math.min(8, rect.width / 3)
+    const mode: 'move' | 'left' | 'right' = e.clientX - rect.left < zone ? 'left' : rect.right - e.clientX < zone ? 'right' : 'move'
+    const base = project
+    const c = (base.overlays ?? []).find((x) => x.id === id)
+    if (!c) return
+    beginDrag(e.clientX, e.clientY, (dx) => {
+      const dt = dx / zoom
+      let start = c.start
+      let duration = c.duration
+      if (mode === 'move') start = Math.max(0, c.start + dt)
+      else if (mode === 'right') duration = Math.max(0.2, c.duration + dt)
+      else {
+        const end = c.start + c.duration
+        start = Math.min(Math.max(0, c.start + dt), end - 0.2)
+        duration = end - start
+      }
+      const next = { ...base, overlays: (base.overlays ?? []).map((x) => (x.id === id ? { ...x, start, duration } : x)) }
+      setHist((h) => ({ ...h, present: next }))
+    })
+  }
+
+  function startOverlayBox(e: React.PointerEvent<HTMLElement>, id: string) {
+    if (exporting) return
+    e.preventDefault()
+    const box = e.currentTarget.getBoundingClientRect()
+    const cv = e.currentTarget.parentElement?.getBoundingClientRect()
+    const base = project
+    const c = (base.overlays ?? []).find((x) => x.id === id)
+    if (!cv || !c) return
+    const lx = e.clientX - box.left
+    const ly = e.clientY - box.top
+    const z = 14
+    const sx = lx < z ? -1 : box.width - lx < z ? 1 : 0
+    const sy = ly < z ? -1 : box.height - ly < z ? 1 : 0
+    const wasSel = sel?.id === id
+    setSel({ kind: 'o', id })
+    const patch = (o: Partial<OClip>) => {
+      const next = { ...base, overlays: (base.overlays ?? []).map((x) => (x.id === id ? { ...x, ...o } : x)) }
+      setHist((h) => ({ ...h, present: next }))
+    }
+    if (wasSel && sx !== 0 && sy !== 0) {
+      beginDrag(e.clientX, e.clientY, (dx, dy) => {
+        patch({ w: Math.min(100, Math.max(5, c.w + (((sx * dx + sy * dy) / 2) / cv.width) * 100)) })
+      })
+      return
+    }
+    const rx = Math.max(1, cv.width - box.width)
+    const ry = Math.max(1, cv.height - box.height)
+    beginDrag(e.clientX, e.clientY, (dx, dy) => {
+      patch({ x: Math.min(100, Math.max(0, c.x + (dx / rx) * 100)), y: Math.min(100, Math.max(0, c.y + (dy / ry) * 100)) })
     })
   }
 
@@ -1133,6 +1234,7 @@ export default function VideoEditorPage() {
       ...p,
       vclips: p.vclips.map((c) => ({ ...c, mediaId: fix(c.mediaId) })),
       aclips: p.aclips.map((c) => ({ ...c, mediaId: fix(c.mediaId) })),
+      overlays: (p.overlays ?? []).map((c) => ({ ...c, mediaId: fix(c.mediaId) })),
     }
     setHist({ past: [], present: next, future: [] })
     setName(r.row.name)
@@ -1221,6 +1323,8 @@ export default function VideoEditorPage() {
   const selVMedia = selV ? mediaMap.get(selV.mediaId) : undefined
   const resolutions = [480, 720, 1080].filter((s) => s <= limits.maxShortSide)
   const liveTexts = project.texts.filter((c) => t >= c.start && t < c.start + c.duration)
+  const liveOverlays = (project.overlays ?? []).filter((o) => t >= o.start && t < o.start + o.duration)
+  const selO = sel?.kind === 'o' ? (project.overlays ?? []).find((c) => c.id === sel.id) : undefined
 
   return (
     <section className="wrap tool-page ed" data-theme={theme}>
@@ -1428,6 +1532,21 @@ export default function VideoEditorPage() {
               {!activeMedia && project.vclips.length === 0 && (
                 <div className="ed-empty-msg">Importa un video o una imagen y pulsa Agregar.</div>
               )}
+              {liveOverlays.map((o) => {
+                const om = mediaMap.get(o.mediaId)
+                if (!om) return null
+                return (
+                  <img
+                    key={o.id}
+                    src={om.url}
+                    alt=""
+                    draggable={false}
+                    className={'ed-ov-live' + (sel?.id === o.id ? ' is-sel' : '')}
+                    onPointerDown={(e) => startOverlayBox(e, o.id)}
+                    style={{ left: o.x + '%', top: o.y + '%', right: 'auto', bottom: 'auto', height: 'auto', width: o.w + '%', transform: 'translate(-' + o.x + '%, -' + o.y + '%)', opacity: 1 - (o.opac ?? 0) / 100 }}
+                  />
+                )
+              })}
               {liveTexts.map((c) => (
                 <div
                   key={c.id}
@@ -1509,7 +1628,23 @@ export default function VideoEditorPage() {
             {TRACKS.map((track) => (
               <div key={track.id} className="ed-track" style={{ width: span * zoom }}>
                 <span className="ed-track-label">{track.label}</span>
-                {track.id === 'overlay' && <span className="ed-track-note">Imagenes superpuestas: pendiente</span>}
+                {track.id === 'overlay' && (
+                  <div className="ed-ovdrop" onDragOver={(e) => { e.preventDefault(); e.stopPropagation() }} onDrop={dropOverlay}>
+                    {(project.overlays ?? []).length === 0 && <span className="ed-track-note">Arrastra una imagen de Mi multimedia aqui para superponerla</span>}
+                    {(project.overlays ?? []).map((o) => (
+                      <button
+                        key={o.id}
+                        type="button"
+                        className={'ed-clip ed-clip-o' + (sel?.id === o.id ? ' is-sel' : '')}
+                        style={{ left: o.start * zoom, width: Math.max(o.duration * zoom, 6), ...thumbStyle(o.mediaId) }}
+                        onPointerDown={(e) => startOverlayDrag(e, o.id)}
+                        title={mediaMap.get(o.mediaId)?.name}
+                      >
+                        {mediaMap.get(o.mediaId)?.name ?? 'Archivo eliminado'}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {track.id === 'video' &&
                   project.vclips.map((c, i) => (
                     <button
@@ -1558,6 +1693,19 @@ export default function VideoEditorPage() {
       <div className="ed-panel ed-rside">
         <h2>Clip seleccionado</h2>
         {!sel && <p className="ed-empty">Haz clic en un clip de la linea de tiempo para editarlo.</p>}
+        {selO && (
+          <div className="ed-fields">
+            <NumField label="Empieza en (s)" value={selO.start} onCommit={(n) => patchO(selO.id, { start: n })} />
+            <NumField label="Duracion (s)" value={selO.duration} onCommit={(n) => patchO(selO.id, { duration: n })} />
+            <NumField label="Tamano (% del ancho)" value={selO.w} step={1} onCommit={(n) => patchO(selO.id, { w: n })} />
+            <NumField label="Posicion X (%)" value={selO.x} step={1} onCommit={(n) => patchO(selO.id, { x: n })} />
+            <NumField label="Posicion Y (%)" value={selO.y} step={1} onCommit={(n) => patchO(selO.id, { y: n })} />
+            <label className="ed-slider">
+              <span className="ed-slider-row">Transparencia<b>{Math.round(selO.opac)}%</b></span>
+              <input type="range" min={0} max={100} value={selO.opac} onChange={(e) => patchO(selO.id, { opac: Number(e.target.value) })} />
+            </label>
+          </div>
+        )}
         {selV && (
           <nav className="ed-rtabs" aria-label="Secciones del clip">
             {([['edit', 'Edicion'], ['color', 'Colores'], ['fade', 'Fundido'], ['audio', 'Audio'], ['filter', 'Filtros'], ['fx', 'Efectos']] as const).map(([id, lb]) => (
