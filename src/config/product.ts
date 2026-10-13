@@ -1,4 +1,4 @@
-﻿export const PRODUCT = {
+export const PRODUCT = {
   name: 'Kompvid',
   domain: 'kompvid.com',
   tagline: 'Comprime tus videos al tama\u00f1o que necesitas',
@@ -17,7 +17,7 @@ export const PLANS = {
     id: 'pro',
     name: 'Kompvid Pro',
     currency: 'USD',
-    priceMonthly: 4.99,
+    priceMonthly: 9.99,
     priceYearly: 39.99,
     maxFileMB: null as number | null,
     dailyOperations: null as number | null,

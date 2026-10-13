@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { PLANS } from '../config/product'
 import { useAuth } from '../core/auth/useAuth'
+import { tools } from '../core/tools/registry'
 
 type Billing = 'monthly' | 'yearly'
 
@@ -75,6 +76,14 @@ export default function PricingPage() {
             <ul>
               {PRO_PLANNED.map((f) => (
                 <li key={f}>{f}</li>
+              ))}
+            </ul>
+            <p className="plan-planned">Herramientas incluidas</p>
+            <ul className="plan-tools">
+              {tools.map((tool) => (
+                <li key={tool.id}>
+                  {tool.status === 'active' ? <Link to={tool.route}>{tool.name}</Link> : <span>{tool.name} (próximamente)</span>}
+                </li>
               ))}
             </ul>
             <p className="plan-note">Aún no disponible. Los pagos se activarán más adelante.</p>

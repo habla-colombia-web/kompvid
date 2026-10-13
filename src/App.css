@@ -231,3 +231,8 @@ body { overflow-x: clip; }
 .wrap{max-width:none;margin-left:0;margin-right:0;padding-left:clamp(16px,4vw,64px);padding-right:clamp(16px,4vw,64px)}
 .auth-page{max-width:440px;margin-left:auto;margin-right:auto}
 .tool-page{max-width:760px;margin-left:auto;margin-right:auto}
+.plan-tools{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 20px;list-style:none;padding:0;margin:12px 0 20px}
+.plan-tools li{padding-left:0;font-size:.95rem}
+.plan-tools a,.plan-tools span{color:#fff;text-decoration:none}
+.plan-tools a:hover{text-decoration:underline;color:#2fe0d6}
+@media (max-width:640px){.plan-tools{grid-template-columns:1fr}}
