@@ -276,3 +276,6 @@ section.ed.wrap .ed-main > .ed-panel.ed-rside:has(> .ed-rtabs) { display: grid; 
 .ed-preset { padding: 10px 6px; border: 1px solid var(--bd); border-radius: 8px; background: var(--bg); color: var(--tx); font: inherit; font-size: 0.78rem; cursor: pointer; }
 .ed-preset:hover { outline: 2px solid var(--ac); }
 @media (max-width: 760px) { section.ed.wrap .ed-main { grid-template-columns: 1fr; } }
+/* Ocultar panel del clip: sale del layout y el visor ocupa todo */
+section.ed.wrap .ed-main.ed-rhide > .ed-panel.ed-rside, section.ed.wrap .ed-main.ed-rhide > .ed-rside { display: none !important; }
+section.ed.wrap .ed-main.ed-rhide { grid-template-columns: 300px minmax(0, 1fr) !important; grid-template-rows: minmax(0, 1fr) !important; }
