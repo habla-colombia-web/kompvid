@@ -28,6 +28,7 @@ export const FX_LIST: FxDef[] = [
   { id: 'zslow', label: 'Zoom lento', css: () => '', transform: zoom(0.024, 1.3), ff: (w, h) => zp(w, h, 'min(1+0.0008*on,1.3)') },
   { id: 'zrand', label: 'Zoom lento aleatorio', css: () => '', transform: (t) => 'scale(1.15) translate(' + (Math.sin(t * 1.5) * 3).toFixed(2) + '%, ' + (Math.cos(t * 1.1) * 2).toFixed(2) + '%)', ff: (w, h) => zp(w, h, '1.15', 'sin(on/20)*iw*0.03', 'cos(on/27)*ih*0.02') },
   { id: 'flash', label: 'Flash', css: (t) => 'brightness(' + (t % 1.5 < 0.1 ? 1.6 : 1) + ')', ff: "eq=brightness='if(lt(mod(t,1.5),0.1),0.6,0)':eval=frame" },
+  { id: 'green', label: 'Pantalla verde', css: () => 'hue-rotate(0deg)', ff: 'colorkey=0x00FF00:0.3:0.1' },
   { id: 'chroma', label: 'Aberracion cromatica', css: () => 'drop-shadow(2px 0 0 rgba(255,0,0,0.55)) drop-shadow(-2px 0 0 rgba(0,0,255,0.55))', ff: 'rgbashift=rh=-4:bh=4' },
 ]
 

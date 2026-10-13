@@ -302,3 +302,6 @@ section.ed.wrap .ed-main.ed-rhide { grid-template-columns: 300px minmax(0, 1fr) 
 .ed-ov-live { position: absolute; cursor: move; touch-action: none; user-select: none; pointer-events: auto; object-fit: contain; }
 .ed-ov-live.is-sel { outline: 2px solid #7c3aed; }
 .ed-ov-live.is-sel::after { content: ''; position: absolute; inset: 0; pointer-events: none; }
+/* Miniaturas de efectos: arreglo de alto */
+.ed-fxcard .ed-thumb { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; min-height: 56px; background-size: cover; background-position: center; background-color: #1b2c49; border-radius: 6px; flex: none; }
+.ed-fxcard > span:last-child { display: block; line-height: 1.2; }
