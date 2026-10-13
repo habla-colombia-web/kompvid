@@ -7,6 +7,7 @@ import { consumeUsage } from '../../core/usage/consumeUsage'
 import { cancelCompression, loadEngine } from '../video-compressor/ffmpegService'
 import { formatBytes } from '../video-compressor/utils'
 import { exportProject } from './exportService'
+import { FX_LIST, fxStyle } from './effects'
 import { loadEditorLimits, rowToLimits, type EditorLimits } from './limitsService'
 import { deleteProject, getMediaFile, listProjects, loadDraft, loadProject, putMedia, requestPersistentStorage, saveDraft, saveProject, type MediaRef, type ProjectRow } from './projectService'
 import {
@@ -253,6 +254,7 @@ export default function VideoEditorPage() {
   const [tab, setTab] = useState<RailTab>('media')
   const [trQ, setTrQ] = useState('')
   const [rOpen, setROpen] = useState(true)
+  const [fxQ, setFxQ] = useState('')
   const [rtab, setRtab] = useState<'edit' | 'color' | 'fade' | 'audio' | 'filter' | 'fx'>('edit')
   const [recMode, setRecMode] = useState<'camera' | 'screen' | 'mic' | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
@@ -1390,10 +1392,10 @@ export default function VideoEditorPage() {
                 ref={videoRef}
                 muted={!project.keepVideoAudio || (active?.clip.vol ?? 1) === 0}
                 playsInline
-                style={{ display: activeMedia?.kind === 'video' ? 'block' : 'none', objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...previewFx }}
+                style={{ display: activeMedia?.kind === 'video' ? 'block' : 'none', objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...fxStyle(previewFx, fxClip?.fx, t) }}
               />
               {activeMedia?.kind === 'image' && (
-                <img src={activeMedia.url} alt="" style={{ objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...previewFx }} />
+                <img src={activeMedia.url} alt="" style={{ objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...fxStyle(previewFx, fxClip?.fx, t) }} />
               )}
               {!activeMedia && project.vclips.length === 0 && (
                 <div className="ed-empty-msg">Importa un video o una imagen y pulsa Agregar.</div>
@@ -1560,6 +1562,19 @@ export default function VideoEditorPage() {
                   <button key={f.id} type="button" className="ed-preset" onClick={() => patchFx(selV.id, { bright: f.b, contrast: f.c, sat: f.s })}>{f.label}</button>
                 ))}
               </div>
+            )}
+            {rtab === 'fx' && (
+              <>
+                <input type="search" className="ed-fx-q" placeholder="Buscar efectos" value={fxQ} onChange={(e) => setFxQ(e.target.value)} aria-label="Buscar efectos" />
+                <div className="ed-fxgrid">
+                  {FX_LIST.filter((f) => f.label.toLowerCase().includes(fxQ.trim().toLowerCase())).map((f) => (
+                    <button key={f.id} type="button" className={'ed-fxcard' + ((selV.fx ?? 'none') === f.id ? ' is-on' : '')} onClick={() => patchFx(selV.id, { fx: f.id === 'none' ? undefined : f.id })}>
+                      <span className="ed-thumb" style={fxStyle(thumbStyle(selV.mediaId), f.id, 0)} />
+                      <span>{f.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
             {rtab === 'fx' && <NumField label="Desenfoque (0 a 20)" value={selV.blur ?? 0} step={1} onCommit={(n) => patchFx(selV.id, { blur: Math.min(20, Math.max(0, n)) })} />}
             {rtab === 'fx' && <NumField label="Vineta (0 a 100)" value={selV.vig ?? 0} step={5} onCommit={(n) => patchFx(selV.id, { vig: Math.min(100, Math.max(0, n)) })} />}

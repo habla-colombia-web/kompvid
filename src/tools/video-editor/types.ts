@@ -61,6 +61,7 @@ export interface VClip {
   vol?: number
   blur?: number
   vig?: number
+  fx?: string
   trans?: { type: string; dur: number }
   id: string
   mediaId: string
