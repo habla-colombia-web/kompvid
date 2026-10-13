@@ -1392,10 +1392,10 @@ export default function VideoEditorPage() {
                 ref={videoRef}
                 muted={!project.keepVideoAudio || (active?.clip.vol ?? 1) === 0}
                 playsInline
-                style={{ display: activeMedia?.kind === 'video' ? 'block' : 'none', objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...fxStyle(previewFx, fxClip?.fx, t) }}
+                style={{ display: activeMedia?.kind === 'video' ? 'block' : 'none', objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...fxStyle(previewFx, fxClip?.fx, fxPos) }}
               />
               {activeMedia?.kind === 'image' && (
-                <img src={activeMedia.url} alt="" style={{ objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...fxStyle(previewFx, fxClip?.fx, t) }} />
+                <img src={activeMedia.url} alt="" style={{ objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...fxStyle(previewFx, fxClip?.fx, fxPos) }} />
               )}
               {!activeMedia && project.vclips.length === 0 && (
                 <div className="ed-empty-msg">Importa un video o una imagen y pulsa Agregar.</div>

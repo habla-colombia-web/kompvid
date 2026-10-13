@@ -18,7 +18,7 @@ export interface ExportSettings {
   crf: number
 }
 
-function fxChain(c: VClip, dur: number): { v: string; a: string } {
+function fxChain(c: VClip, dur: number, w: number, h: number): { v: string; a: string } {
   let v = ''
   let a = (c.vol ?? 1) !== 1 ? ',volume=' + (c.vol ?? 1).toFixed(2) : ''
   const b = (c.bright ?? 0) / 100
@@ -27,7 +27,7 @@ function fxChain(c: VClip, dur: number): { v: string; a: string } {
   if (b !== 0 || ct !== 1 || s !== 1) v += ',eq=brightness=' + b.toFixed(2) + ':contrast=' + ct.toFixed(2) + ':saturation=' + s.toFixed(2)
   if ((c.blur ?? 0) > 0) v += ',gblur=sigma=' + (c.blur ?? 0).toFixed(1)
   if ((c.vig ?? 0) > 0) v += ',vignette=angle=' + (1.2 - ((c.vig ?? 0) / 100) * 0.9).toFixed(2)
-  if (fxFilter(c.fx)) v += ',' + fxFilter(c.fx)
+  if (fxFilter(c.fx, w, h)) v += ',' + fxFilter(c.fx, w, h)
   const fi = Math.min(c.fadeIn ?? 0, dur / 2)
   const fo = Math.min(c.fadeOut ?? 0, dur / 2)
   if (fi > 0.01) {
@@ -148,7 +148,7 @@ export async function exportProject(
       const m = media.get(c.mediaId)
       if (!m) throw new Error('Un clip usa un archivo que ya no esta en el proyecto.')
       const dur = clipDuration(c)
-      const fx = fxChain(c, dur)
+      const fx = fxChain(c, dur, w, h)
       const name = await ensure(m)
       if (m.kind === 'image') args.push('-loop', '1', '-t', dur.toFixed(3), '-i', name)
       else args.push('-ss', c.inSec.toFixed(3), '-t', dur.toFixed(3), '-i', name)
