@@ -7,7 +7,7 @@ import { consumeUsage } from '../../core/usage/consumeUsage'
 import { cancelCompression, loadEngine } from '../video-compressor/ffmpegService'
 import { formatBytes } from '../video-compressor/utils'
 import { exportProject } from './exportService'
-import { FX_LIST, fxStyle } from './effects'
+import { FX_LIST, colorStyle, fxStyle } from './effects'
 import { loadEditorLimits, rowToLimits, type EditorLimits } from './limitsService'
 import { deleteProject, getMediaFile, listProjects, loadDraft, loadProject, putMedia, requestPersistentStorage, saveDraft, saveProject, type MediaRef, type ProjectRow } from './projectService'
 import {
@@ -216,6 +216,14 @@ function RailIco({ n }: { n: RailTab }) {
     default: return (<svg {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><polygon points="8 8 12 12 8 16" /><polygon points="16 8 12 12 16 16" /></svg>)
   }
 }
+
+const COLOR_ROWS = [
+  { key: 'bright', label: 'Exposicion', min: -100, max: 100, def: 0 },
+  { key: 'contrast', label: 'Contraste', min: 0, max: 200, def: 100 },
+  { key: 'sat', label: 'Saturacion', min: 0, max: 200, def: 100 },
+  { key: 'temp', label: 'Temperatura', min: -100, max: 100, def: 0 },
+  { key: 'opac', label: 'Transparencia', min: 0, max: 100, def: 0 },
+] as const
 
 export default function VideoEditorPage() {
   const { plan } = usePlan()
@@ -1392,10 +1400,10 @@ export default function VideoEditorPage() {
                 ref={videoRef}
                 muted={!project.keepVideoAudio || (active?.clip.vol ?? 1) === 0}
                 playsInline
-                style={{ display: activeMedia?.kind === 'video' ? 'block' : 'none', objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...fxStyle(previewFx, fxClip?.fx, fxPos) }}
+                style={{ display: activeMedia?.kind === 'video' ? 'block' : 'none', objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...colorStyle(fxStyle(previewFx, fxClip?.fx, fxPos), fxClip) }}
               />
               {activeMedia?.kind === 'image' && (
-                <img src={activeMedia.url} alt="" style={{ objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...fxStyle(previewFx, fxClip?.fx, fxPos) }} />
+                <img src={activeMedia.url} alt="" style={{ objectFit: project.fit === 'fill' ? 'cover' : 'contain', ...colorStyle(fxStyle(previewFx, fxClip?.fx, fxPos), fxClip) }} />
               )}
               {!activeMedia && project.vclips.length === 0 && (
                 <div className="ed-empty-msg">Importa un video o una imagen y pulsa Agregar.</div>
@@ -1541,9 +1549,18 @@ export default function VideoEditorPage() {
           <div className="ed-fields">
             {rtab === 'edit' && <NumField label={selVMedia?.kind === 'image' ? 'Duracion (s)' : 'Inicio del recorte (s)'} value={selVMedia?.kind === 'image' ? clipDuration(selV) : selV.inSec} onCommit={(n) => (selVMedia?.kind === 'image' ? patchV(selV.id, { outSec: selV.inSec + n }) : patchV(selV.id, { inSec: n }))} />}
             {rtab === 'edit' && selVMedia?.kind !== 'image' && <NumField label="Final del recorte (s)" value={selV.outSec} onCommit={(n) => patchV(selV.id, { outSec: n })} />}
-            {rtab === 'color' && <NumField label="Brillo (-100 a 100)" value={selV.bright ?? 0} step={5} onCommit={(n) => patchFx(selV.id, { bright: Math.min(100, Math.max(-100, n)) })} />}
-            {rtab === 'color' && <NumField label="Contraste (0 a 200)" value={selV.contrast ?? 100} step={5} onCommit={(n) => patchFx(selV.id, { contrast: Math.min(200, Math.max(0, n)) })} />}
-            {rtab === 'color' && <NumField label="Saturacion (0 a 200)" value={selV.sat ?? 100} step={5} onCommit={(n) => patchFx(selV.id, { sat: Math.min(200, Math.max(0, n)) })} />}
+            {rtab === 'color' && (
+              <div className="ed-sliders">
+                <h3>Ajustar colores</h3>
+                {COLOR_ROWS.map((r) => (
+                  <label key={r.key} className={'ed-slider ed-slider-' + r.key}>
+                    <span>{r.label}</span>
+                    <input type="range" min={r.min} max={r.max} value={selV[r.key] ?? r.def} onChange={(e) => patchFx(selV.id, { [r.key]: Number(e.target.value) })} />
+                  </label>
+                ))}
+                <button type="button" className="ed-btn ed-btn-small" onClick={() => patchFx(selV.id, { bright: 0, contrast: 100, sat: 100, temp: 0, opac: 0 })}>Restablecer</button>
+              </div>
+            )}
             {rtab === 'fade' && <NumField label="Fundido de entrada (s)" value={selV.fadeIn ?? 0} onCommit={(n) => patchFx(selV.id, { fadeIn: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />}
             {rtab === 'fade' && <NumField label="Fundido de salida (s)" value={selV.fadeOut ?? 0} onCommit={(n) => patchFx(selV.id, { fadeOut: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />}
             {rtab === 'audio' && (

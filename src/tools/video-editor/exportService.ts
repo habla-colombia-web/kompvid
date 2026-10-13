@@ -28,6 +28,10 @@ function fxChain(c: VClip, dur: number, w: number, h: number): { v: string; a: s
   if ((c.blur ?? 0) > 0) v += ',gblur=sigma=' + (c.blur ?? 0).toFixed(1)
   if ((c.vig ?? 0) > 0) v += ',vignette=angle=' + (1.2 - ((c.vig ?? 0) / 100) * 0.9).toFixed(2)
   if (fxFilter(c.fx, w, h)) v += ',' + fxFilter(c.fx, w, h)
+  const tp = (c.temp ?? 0) / 100
+  if (tp !== 0) v += ',colorchannelmixer=rr=' + (1 + 0.2 * tp).toFixed(3) + ':bb=' + (1 - 0.2 * tp).toFixed(3)
+  const kk = 1 - (c.opac ?? 0) / 100
+  if (kk < 0.999) v += ',colorchannelmixer=rr=' + kk.toFixed(3) + ':gg=' + kk.toFixed(3) + ':bb=' + kk.toFixed(3)
   const fi = Math.min(c.fadeIn ?? 0, dur / 2)
   const fo = Math.min(c.fadeOut ?? 0, dur / 2)
   if (fi > 0.01) {

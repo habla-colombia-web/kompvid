@@ -47,3 +47,12 @@ export function fxStyle(base: CSSProperties, id: string | undefined, t: number):
     transform: typeof f.transform === 'function' ? f.transform(t) : f.transform,
   }
 }
+export function colorStyle(base: CSSProperties, c?: { temp?: number; opac?: number }): CSSProperties {
+  if (!c) return base
+  const tp = (c.temp ?? 0) / 100
+  const op = (c.opac ?? 0) / 100
+  let filter = (base.filter as string | undefined) ?? ''
+  if (tp !== 0) filter += ' sepia(' + (Math.abs(tp) * 0.35).toFixed(3) + ')' + (tp < 0 ? ' hue-rotate(180deg)' : '')
+  const prev = typeof base.opacity === 'number' ? base.opacity : 1
+  return { ...base, filter, opacity: prev * (1 - op) }
+}
