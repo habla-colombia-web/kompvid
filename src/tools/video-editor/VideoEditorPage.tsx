@@ -300,6 +300,7 @@ export default function VideoEditorPage() {
   const mediaMap = useMemo(() => new Map(media.map((m) => [m.id, m])), [media])
   const starts = useMemo(() => videoStarts(project.vclips), [project.vclips])
   const total = totalDuration(project)
+  const playEnd = Math.max(total, ...project.aclips.map((a) => a.start + clipDuration(a)))
   const exporting = expStage !== 'idle'
 
   const commit = useCallback((fn: (p: Project) => Project) => {
@@ -349,11 +350,11 @@ export default function VideoEditorPage() {
   }, [playing])
 
   useEffect(() => {
-    if (playing && t >= total) {
+    if (playing && t >= playEnd) {
       setPlaying(false)
-      setT(total)
+      setT(playEnd)
     }
-  }, [t, playing, total])
+  }, [t, playing, playEnd])
 
   const active = useMemo(() => {
     for (let i = 0; i < project.vclips.length; i++) {
@@ -686,7 +687,7 @@ export default function VideoEditorPage() {
 
   function seekFromRuler(e: React.MouseEvent<HTMLDivElement>) {
     const rect = e.currentTarget.getBoundingClientRect()
-    setT(Math.min(Math.max(0, (e.clientX - rect.left) / zoom), total))
+    setT(Math.min(Math.max(0, (e.clientX - rect.left) / zoom), playEnd))
   }
 
   function beginDrag(x0: number, y0: number, onMove: (dx: number, dy: number) => void) {
@@ -831,7 +832,7 @@ export default function VideoEditorPage() {
   function startScrub(e: React.PointerEvent<HTMLDivElement>) {
     setPlaying(false)
     const rect = e.currentTarget.getBoundingClientRect()
-    const seek = (x: number) => setT(Math.min(Math.max(0, (x - rect.left) / zoom), total))
+    const seek = (x: number) => setT(Math.min(Math.max(0, (x - rect.left) / zoom), playEnd))
     seek(e.clientX)
     const move = (ev: PointerEvent) => seek(ev.clientX)
     const up = () => {
@@ -935,8 +936,8 @@ export default function VideoEditorPage() {
   }
 
   function togglePlay() {
-    if (total <= 0) return
-    if (!playing && t >= total) setT(0)
+    if (playEnd <= 0) return
+    if (!playing && t >= playEnd) setT(0)
     setPlaying((p) => !p)
   }
 
@@ -1427,7 +1428,7 @@ export default function VideoEditorPage() {
             </div>
           </div>
           <div className="ed-controls">
-            <button type="button" className="ed-btn" onClick={togglePlay} disabled={total <= 0 || exporting}>
+            <button type="button" className="ed-btn" onClick={togglePlay} disabled={playEnd <= 0 || exporting}>
               {playing ? 'Pausar' : 'Reproducir'}
             </button>
             <span>{fmt(t)} / {fmt(total)}</span>
