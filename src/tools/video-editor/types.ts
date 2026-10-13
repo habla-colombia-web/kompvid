@@ -33,9 +33,9 @@ export interface TrackInfo {
 }
 
 export const TRACKS: TrackInfo[] = [
-  { id: 'video', label: 'Video' },
   { id: 'overlay', label: 'Imagenes' },
   { id: 'text', label: 'Texto' },
+  { id: 'video', label: 'Video' },
   { id: 'audio', label: 'Audio' },
 ]
 
