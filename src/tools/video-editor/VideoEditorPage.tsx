@@ -1764,9 +1764,9 @@ export default function VideoEditorPage() {
                 <input type="search" className="ed-fx-q" placeholder="Buscar efectos" value={fxQ} onChange={(e) => setFxQ(e.target.value)} aria-label="Buscar efectos" />
                 <div className="ed-fxgrid">
                   {FX_LIST.filter((f) => f.label.toLowerCase().includes(fxQ.trim().toLowerCase())).map((f) => (
-                    <button key={f.id} type="button" className={'ed-fxcard' + ((selV.fx ?? 'none') === f.id ? ' is-on' : '')} onClick={() => patchFx(selV.id, { fx: f.id === 'none' ? undefined : f.id })}>
-                      <span className="ed-thumb" style={fxStyle(thumbStyle(selV.mediaId), f.id, 0)} />
-                      <span>{f.label}</span>
+                    <button key={f.id} type="button" className={'ed-fx2-card' + ((selV.fx ?? 'none') === f.id ? ' is-on' : '')} onClick={() => patchFx(selV.id, { fx: f.id === 'none' ? undefined : f.id })}>
+                      <span className="ed-fx2-thumb"><span className="ed-fx2-img" style={fxStyle(thumbStyle(selV.mediaId), f.id, 0)} /></span>
+                      <span className="ed-fx2-name">{f.label}</span>
                     </button>
                   ))}
                 </div>
