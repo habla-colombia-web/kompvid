@@ -293,3 +293,6 @@ section.ed.wrap .ed-main.ed-rhide { grid-template-columns: 300px minmax(0, 1fr) 
 .ed-slider input[type="range"] { width: 100%; accent-color: #7c3aed; }
 .ed-slider-sat input[type="range"] { accent-color: #22c55e; }
 .ed-slider-temp input[type="range"] { accent-color: #f59e0b; }
+/* Fundido y Audio */
+.ed-slider-row { display: flex; justify-content: space-between; align-items: center; }
+.ed-slider-row b { font-weight: 500; padding: 1px 8px; border: 1px solid var(--bd); border-radius: 6px; }

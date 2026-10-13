@@ -7,6 +7,7 @@ import { consumeUsage } from '../../core/usage/consumeUsage'
 import { cancelCompression, loadEngine } from '../video-compressor/ffmpegService'
 import { formatBytes } from '../video-compressor/utils'
 import { exportProject } from './exportService'
+import { extractAudio } from './audioService'
 import { FX_LIST, colorStyle, fxStyle } from './effects'
 import { loadEditorLimits, rowToLimits, type EditorLimits } from './limitsService'
 import { deleteProject, getMediaFile, listProjects, loadDraft, loadProject, putMedia, requestPersistentStorage, saveDraft, saveProject, type MediaRef, type ProjectRow } from './projectService'
@@ -263,6 +264,7 @@ export default function VideoEditorPage() {
   const [trQ, setTrQ] = useState('')
   const [rOpen, setROpen] = useState(true)
   const [fxQ, setFxQ] = useState('')
+  const [sepBusy, setSepBusy] = useState(false)
   const [rtab, setRtab] = useState<'edit' | 'color' | 'fade' | 'audio' | 'filter' | 'fx'>('edit')
   const [recMode, setRecMode] = useState<'camera' | 'screen' | 'mic' | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
@@ -904,6 +906,23 @@ export default function VideoEditorPage() {
 
   function patchFx(id: string, patch: Partial<VClip>) {
     commit((p) => ({ ...p, vclips: p.vclips.map((c) => (c.id === id ? { ...c, ...patch } : c)) }))
+  }
+
+  async function separateAudio() {
+    if (!selV || sepBusy) return
+    const m = mediaMap.get(selV.mediaId)
+    if (!m || m.kind !== 'video') return
+    setSepBusy(true)
+    setNotice(null)
+    try {
+      const f = await extractAudio(m)
+      await handleFiles([f])
+      patchFx(selV.id, { vol: 0 })
+      setNotice('Audio separado y clip silenciado. Pulsa + en la tarjeta del audio en Mi multimedia para ponerlo en la pista Audio.')
+    } catch (err) {
+      setNotice('No se pudo separar el audio. ' + (err instanceof Error ? err.message : ''))
+    }
+    setSepBusy(false)
   }
 
   function zoomTo(next: number) {
@@ -1562,14 +1581,25 @@ export default function VideoEditorPage() {
                 <button type="button" className="ed-btn ed-btn-small" onClick={() => patchFx(selV.id, { bright: 0, contrast: 100, sat: 100, temp: 0, opac: 0 })}>Restablecer</button>
               </div>
             )}
-            {rtab === 'fade' && <NumField label="Fundido de entrada (s)" value={selV.fadeIn ?? 0} onCommit={(n) => patchFx(selV.id, { fadeIn: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />}
-            {rtab === 'fade' && <NumField label="Fundido de salida (s)" value={selV.fadeOut ?? 0} onCommit={(n) => patchFx(selV.id, { fadeOut: Math.max(0, Math.min(n, clipDuration(selV) / 2)) })} />}
+            {rtab === 'fade' && (
+              <div className="ed-sliders">
+                {([['fadeIn', 'Intensificar'], ['fadeOut', 'Atenuar']] as const).map(([k, lb]) => (
+                  <label key={k} className="ed-slider">
+                    <span className="ed-slider-row">{lb}<b>{(selV[k] ?? 0).toFixed(1)} s</b></span>
+                    <input type="range" min={0} max={Math.max(0.1, clipDuration(selV) / 2)} step={0.1} value={selV[k] ?? 0} onChange={(e) => patchFx(selV.id, { [k]: Number(e.target.value) })} />
+                  </label>
+                ))}
+              </div>
+            )}
             {rtab === 'audio' && (
               selVMedia?.kind === 'video' ? (
-                <label>
-                  Volumen del clip: {Math.round((selV.vol ?? 1) * 100)}%
-                  <input type="range" min={0} max={100} value={Math.round((selV.vol ?? 1) * 100)} onChange={(e) => patchFx(selV.id, { vol: Number(e.target.value) / 100 })} />
-                </label>
+                <div className="ed-sliders">
+                  <label className="ed-slider">
+                    <span className="ed-slider-row">Volumen<b>{Math.round((selV.vol ?? 1) * 100)}%</b></span>
+                    <input type="range" min={0} max={100} value={Math.round((selV.vol ?? 1) * 100)} onChange={(e) => patchFx(selV.id, { vol: Number(e.target.value) / 100 })} />
+                  </label>
+                  <button type="button" className="ed-btn" onClick={() => void separateAudio()} disabled={sepBusy || exporting}>{sepBusy ? 'Separando...' : 'Separar audio'}</button>
+                </div>
               ) : (
                 <p className="ed-empty">Este clip no tiene audio propio.</p>
               )
