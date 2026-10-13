@@ -8,7 +8,7 @@ import { cancelCompression, loadEngine } from '../video-compressor/ffmpegService
 import { formatBytes } from '../video-compressor/utils'
 import { exportProject } from './exportService'
 import { loadEditorLimits, rowToLimits, type EditorLimits } from './limitsService'
-import { deleteProject, listProjects, loadProject, saveProject, type MediaRef, type ProjectRow } from './projectService'
+import { deleteProject, getMediaFile, listProjects, loadDraft, loadProject, putMedia, requestPersistentStorage, saveDraft, saveProject, type MediaRef, type ProjectRow } from './projectService'
 import {
   CANVAS_FORMATS,
   EMPTY_PROJECT,
@@ -404,6 +404,41 @@ export default function VideoEditorPage() {
       }
     }
   }, [t, playing, active, activeMedia, project.aclips, mediaMap])
+
+  const persistedMedia = useRef(new Set<string>())
+
+  // Cada archivo importado se guarda en el navegador para poder restaurarlo.
+  useEffect(() => {
+    media.forEach((m) => {
+      if (persistedMedia.current.has(m.id)) return
+      persistedMedia.current.add(m.id)
+      void putMedia(m.file, m.kind).then((err) => {
+        if (err) setNotice(err + ' Este archivo no se restaurara al recargar.')
+      })
+    })
+  }, [media])
+
+  // Recupera del navegador los archivos de un proyecto. Devuelve los que no se encontraron.
+  async function restoreFromCache(refs: MediaRef[]): Promise<MediaRef[]> {
+    const missing: MediaRef[] = []
+    for (const ref of refs) {
+      const f = await getMediaFile(ref)
+      if (!f) {
+        missing.push(ref)
+        continue
+      }
+      try {
+        const probed = await probe(f, ref.kind)
+        const item = { ...probed, id: ref.id }
+        persistedMedia.current.add(ref.id)
+        mediaRef.current = [...mediaRef.current, item]
+        setMedia((prev) => [...prev, item])
+      } catch {
+        missing.push(ref)
+      }
+    }
+    return missing
+  }
 
   async function handleFiles(files: FileList | File[]) {
     setImportError(null)
@@ -966,6 +1001,45 @@ export default function VideoEditorPage() {
     }
   }, [])
 
+  const restoreStarted = useRef(false)
+  const autosaveReady = useRef(false)
+
+  // Al abrir el editor: restaura el ultimo trabajo, con sus archivos.
+  useEffect(() => {
+    if (restoreStarted.current) return
+    restoreStarted.current = true
+    void requestPersistentStorage()
+    void (async () => {
+      const draft = await loadDraft()
+      if (draft && mediaRef.current.length === 0) {
+        const left = await restoreFromCache(draft.data.media)
+        setHist({ past: [], present: { ...EMPTY_PROJECT, ...draft.data.project }, future: [] })
+        setName(draft.name)
+        setProjectId(draft.projectId)
+        setPendingRef(left)
+        setSaveMsg('Se restauro tu trabajo anterior.' + (left.length > 0 ? ' Importa de nuevo: ' + left.map((x) => x.name).join(', ') : ''))
+      }
+      autosaveReady.current = true
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Autoguardado: un segundo despues del ultimo cambio.
+  useEffect(() => {
+    if (!autosaveReady.current) return
+    const timer = window.setTimeout(() => {
+      const refs: MediaRef[] = media.map((m) => ({ id: m.id, name: m.name, size: m.file.size, kind: m.kind }))
+      void saveDraft({
+        projectId,
+        name: name.trim().slice(0, 80) || 'Proyecto sin titulo',
+        data: { project, media: refs },
+      }).then((err) => {
+        if (err) setSaveMsg(err)
+      })
+    }, 1000)
+    return () => window.clearTimeout(timer)
+  }, [project, media, name, projectId])
+
   async function refreshProjects(): Promise<ProjectRow[] | null> {
     const r = await listProjects()
     if (r.error) {
@@ -1033,10 +1107,11 @@ export default function VideoEditorPage() {
     setHist({ past: [], present: next, future: [] })
     setName(r.row.name)
     setProjectId(r.row.id)
-    setPendingRef(pending)
+    const left = await restoreFromCache(pending)
+    setPendingRef(left)
     setSel(null)
     setT(0)
-    setSaveMsg(pending.length > 0 ? 'Proyecto abierto. Importa de nuevo: ' + pending.map((x) => x.name).join(', ') : 'Proyecto abierto.')
+    setSaveMsg(left.length > 0 ? 'Proyecto abierto. Importa de nuevo: ' + left.map((x) => x.name).join(', ') : 'Proyecto abierto.')
   }
 
   async function handleDelete() {
