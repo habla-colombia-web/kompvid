@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { tools } from '../core/tools/registry'
 import './home.css'
@@ -7,6 +8,8 @@ const STEPS = [
   { title: 'Define el tamaño', text: 'Deja que Kompvid lo decida o indica el tamaño que necesitas.' },
   { title: 'Descarga el resultado', text: 'Compara el antes y el después y guarda el archivo comprimido.' },
 ]
+
+const FEATURED = ['video-editor', 'background-remover', 'video-compressor', 'image-compressor', 'video-converter', 'image-resizer']
 
 function ToolIcon({ id }: { id: string }) {
   const isImage = id.includes('background') || id.includes('image')
@@ -23,12 +26,15 @@ function ToolIcon({ id }: { id: string }) {
 }
 
 export default function HomePage() {
+  const [showAll, setShowAll] = useState(false)
+  const featured = FEATURED.map((id) => tools.find((t) => t.id === id)).filter((t): t is (typeof tools)[number] => Boolean(t))
+  const shown = showAll || featured.length === 0 ? tools : featured
   return (
     <>
       <section className="hm-section" id="herramientas">
         <h2>Herramientas</h2>
         <ul className="hm-tools">
-          {tools.map((tool) => (
+          {shown.map((tool) => (
             <li key={tool.id} className="hm-tool">
               <span className="hm-tool-icon"><ToolIcon id={tool.id} /></span>
               <h3>{tool.name}</h3>
@@ -41,6 +47,13 @@ export default function HomePage() {
             </li>
           ))}
         </ul>
+        {featured.length > 0 && tools.length > featured.length && (
+          <p style={{ textAlign: 'center', marginTop: 24 }}>
+            <button type="button" className="hm-btn" onClick={() => setShowAll((v) => !v)}>
+              {showAll ? 'Ver menos' : 'Ver todas las herramientas'}
+            </button>
+          </p>
+        )}
       </section>
 
       <section className="hm-band" id="como-funciona">
