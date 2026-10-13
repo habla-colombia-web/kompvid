@@ -24,3 +24,12 @@
   .hs-icon svg{width:44px;height:44px}
 }
 .hs-card:first-child img{object-position:10% center}
+
+/* Ilustracion mas compacta */
+.hs-stage { max-width: 880px; margin: 28px auto 0; }
+.hs-card { aspect-ratio: 16 / 9; max-height: 300px; }
+.hs-icon { width: 72px; height: 72px; border-radius: 18px; bottom: 16px; }
+.hs-icon svg { width: 44px; height: 44px; }
+.hs-tag { top: 8px; right: 8px; padding: 4px 10px; font-size: 0.8rem; }
+.hs-badge { right: 8px; bottom: 8px; padding: 6px 12px; font-size: 0.85rem; }
+@media (max-width: 640px) { .hs-card { max-height: 220px; } }
