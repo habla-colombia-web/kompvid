@@ -3,16 +3,10 @@ import { Link } from 'react-router-dom'
 import { PRODUCT } from '../config/product'
 import { SOCIAL } from '../config/social'
 import { useAuth } from '../core/auth/useAuth'
-import { getActiveTools } from '../core/tools/registry'
+import { TOOL_MENUS } from './toolGroups'
 import './footer.css'
 
 const YEAR = new Date().getFullYear()
-
-function toolLabel(tool: unknown): string {
-  const t = tool as { name?: string; title?: string; label?: string; id: string }
-  return t.name ?? t.title ?? t.label ?? t.id
-}
-const TOOLS = getActiveTools().map((t) => ({ id: t.id, route: t.route, label: toolLabel(t) }))
 
 const ICONS: { key: keyof typeof SOCIAL; label: string; svg: ReactNode }[] = [
   { key: 'facebook', label: 'Facebook', svg: <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" /> },
@@ -53,26 +47,26 @@ export default function SiteFooter() {
         </Link>
 
         <div className="sf-cols">
-          <nav aria-label="Compañía">
-            <h2>Compañía</h2>
+          {TOOL_MENUS.map((m) => (
+            <nav key={m.id} aria-label={m.label}>
+              <h2>{m.label}</h2>
+              {m.items.map((i) => (
+                <Link key={i.id} to={i.route}>
+                  {i.name}
+                  {i.pro && <span className="sf-pro">Pro</span>}
+                </Link>
+              ))}
+            </nav>
+          ))}
+          <nav aria-label={PRODUCT.name}>
+            <h2>{PRODUCT.name}</h2>
             <Link to="/">Inicio</Link>
             <Link to="/pricing">Precios</Link>
-          </nav>
-          <nav aria-label="Herramientas">
-            <h2>Herramientas</h2>
-            {TOOLS.length > 0
-              ? TOOLS.map((t) => <Link key={t.id} to={t.route}>{t.label}</Link>)
-              : <span className="sf-soon">Próximamente</span>}
-          </nav>
-          <nav aria-label="Planes">
-            <h2>Planes</h2>
-            <Link to="/pricing">Gratis</Link>
-            <Link to="/pricing">Pro</Link>
-          </nav>
-          <nav aria-label="Cuenta">
-            <h2>Cuenta</h2>
             {!loading && session ? (
-              <Link to="/account">Mi cuenta</Link>
+              <>
+                <Link to="/dashboard">Mi panel</Link>
+                <Link to="/account">Mi cuenta</Link>
+              </>
             ) : (
               <>
                 <Link to="/login">Iniciar sesión</Link>
@@ -109,7 +103,11 @@ export default function SiteFooter() {
         </div>
 
         <div className="sf-bottom">
-          <nav className="sf-legal" aria-label="Legal"><Link to="/terminos">Términos y condiciones</Link><Link to="/privacidad">Privacidad y cookies</Link><Link to="/suscripcion">Políticas de suscripción</Link></nav>
+          <nav className="sf-legal" aria-label="Legal">
+            <Link to="/terminos">Términos y condiciones</Link>
+            <Link to="/privacidad">Privacidad y cookies</Link>
+            <Link to="/suscripcion">Políticas de suscripción</Link>
+          </nav>
           <p>&copy; {YEAR} {PRODUCT.name}. Todos los derechos reservados.</p>
         </div>
       </div>

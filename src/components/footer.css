@@ -57,3 +57,10 @@ footer.site-footer { padding: 28px 0 16px; margin-top: 40px; }
 .sf-legal a{color:#c9c4ea;text-decoration:none;font-size:.88rem}
 .sf-legal a:hover,.sf-legal a:focus-visible{color:#fff;text-decoration:underline}
 @media (max-width:640px){.sf-legal{justify-content:center}}
+
+/* sf-grid5: footer con columnas por herramienta */
+.sf-cols{grid-template-columns:repeat(5,minmax(0,1fr))}
+.sf-pro{margin-left:8px;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,.16);color:#fff;font-size:.68rem;font-weight:700;vertical-align:middle}
+@media (max-width:1000px){.sf-cols{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:700px){.sf-cols{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.sf-cols{grid-template-columns:1fr}}
