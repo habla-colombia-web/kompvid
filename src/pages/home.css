@@ -35,3 +35,14 @@
   .hm-plans-actions{width:100%;flex-direction:column}
   .hm-plans-actions .hm-btn{justify-content:center}
 }
+/* Como funciona: tarjetas */
+.hm-how { list-style: none; margin: 24px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.hm-how-card { padding: 28px; border-radius: 14px; background: #f4f4f5; color: #1f1f2b; }
+.hm-how-icon { display: block; margin-bottom: 18px; color: #1f1f2b; }
+.hm-how-card h3 { margin: 0 0 12px; font-size: 1.15rem; }
+.hm-mark { padding: 2px 6px; border-radius: 4px; color: inherit; }
+.hm-mark-y { background: #fbeec2; }
+.hm-mark-g { background: #cdf3e3; }
+.hm-mark-b { background: #d3e3fb; }
+.hm-how-card p { margin: 0 0 10px; line-height: 1.7; font-size: 0.95rem; color: #2b2b3a; }
+@media (max-width: 900px) { .hm-how { grid-template-columns: 1fr; } }
