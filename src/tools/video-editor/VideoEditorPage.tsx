@@ -1755,7 +1755,7 @@ export default function VideoEditorPage() {
             </div>
           </div>
           <div className="ed-controls">
-            <button type="button" className="ed-btn" onClick={() => setBigPreview((v) => !v)} aria-pressed={bigPreview} title="Ver la vista previa en grande (Esc para volver)">{bigPreview ? 'Cerrar vista grande' : '🔍 Vista grande'}</button><button type="button" className="ed-btn" onClick={togglePlay} disabled={playEnd <= 0 || exporting}>
+            <button type="button" className="ed-btn" onClick={() => setBigPreview((v) => !v)} aria-pressed={bigPreview} aria-label={bigPreview ? 'Cerrar vista grande' : 'Vista grande'} title="Vista grande (Esc para volver)">{bigPreview ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 8h3a2 2 0 0 0 2-2V3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M21 16h-3a2 2 0 0 0-2 2v3" /></svg> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" /></svg>}</button><button type="button" className="ed-btn" onClick={togglePlay} disabled={playEnd <= 0 || exporting}>
               {playing ? 'Pausar' : 'Reproducir'}
             </button>
             <span>{fmt(t)} / {fmt(total)}</span>
