@@ -1,0 +1,9 @@
+.ac-grid{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.ac-list{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;margin:8px 0 0}
+.ac-list dt{color:#5b5b7a}
+.ac-list dd{margin:0;font-weight:600;overflow-wrap:anywhere}
+.ac-form{display:flex;flex-direction:column;gap:12px;margin-top:6px}
+.ac-form label{display:flex;flex-direction:column;gap:6px;color:#5b5b7a;font-size:.88rem}
+.ac-form input{padding:10px 12px;border:1px solid #cfd3e6;border-radius:10px;font:inherit;color:#0a0030;background:#fff}
+.ac-form input:focus-visible{outline:3px solid #2fe0d6;outline-offset:1px}
+.ac-ok{margin:0;color:#0b7a55;font-weight:600}
