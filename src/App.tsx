@@ -19,6 +19,10 @@ import AdminLayout from './admin/AdminLayout'
 import AdminDashboardPage from './admin/AdminDashboardPage'
 import AdminLimitsPage from './admin/AdminLimitsPage'
 import AdminDataPage from './admin/AdminDataPage'
+import AdminSupportPage from './admin/AdminSupportPage'
+import AdminNoticesPage from './admin/AdminNoticesPage'
+import AdminSettingsPage from './admin/AdminSettingsPage'
+import SupportPage from './pages/SupportPage'
 import AdminPlaceholderPage from './admin/AdminPlaceholderPage'
 
 // Solo las herramientas con estado "active" reciben ruta.
@@ -35,6 +39,9 @@ export default function App() {
           <Route index element={<AdminDashboardPage />} />
           <Route path="herramientas" element={<AdminLimitsPage />} />
           <Route path="usuarios" element={<AdminDataPage kind="usuarios" />} />
+          <Route path="soporte" element={<AdminSupportPage />} />
+          <Route path="notificaciones" element={<AdminNoticesPage />} />
+          <Route path="configuracion" element={<AdminSettingsPage />} />
           <Route path="planes" element={<AdminDataPage kind="planes" />} />
           <Route path="uso" element={<AdminDataPage kind="uso" />} />
           <Route path="auditoria" element={<AdminDataPage kind="auditoria" />} />
@@ -52,6 +59,7 @@ export default function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="account" element={<AccountPage />} />
+        <Route path="soporte" element={<SupportPage />} />
           <Route path="dashboard" element={<DashboardPage />} />
           {toolRoutes.map(({ tool, Component }) => (
             <Route
