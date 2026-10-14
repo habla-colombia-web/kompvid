@@ -41,25 +41,51 @@ export default function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="sf-wrap">
-        <Link className="sf-brand" to="/">
-          <span className="sf-logo"><img src="/logo.svg" alt="" width={32} height={32} /></span>
-          <span>{PRODUCT.name}</span>
-        </Link>
+        <div className="sf-main">
+          <div className="sf-left">
+            <Link className="sf-brand" to="/">
+              <span className="sf-logo"><img src="/logo.svg" alt="" width={32} height={32} /></span>
+              <span>{PRODUCT.name}</span>
+            </Link>
 
-        <div className="sf-cols">
-          {TOOL_MENUS.map((m) => (
-            <nav key={m.id} aria-label={m.label}>
-              <h2>{m.label}</h2>
-              {m.items.map((i) => (
-                <Link key={i.id} to={i.route}>
-                  {i.name}
-                  {i.pro && <span className="sf-pro">Pro</span>}
-                </Link>
-              ))}
-            </nav>
-          ))}
+            <div className="sf-social">
+              {ICONS.map(({ key, label, svg }) =>
+                SOCIAL[key] ? (
+                  <a key={key} href={SOCIAL[key]} target="_blank" rel="noopener noreferrer" aria-label={label}>
+                    <SocialIcon label={label} svg={svg} />
+                  </a>
+                ) : (
+                  <span key={key} className="sf-off"><SocialIcon label={label} svg={svg} /></span>
+                ),
+              )}
+            </div>
 
-          <div className="sf-col">
+            <div className="sf-pills">
+              <span className="sf-pill"><ColombiaFlag />Es</span>
+              <span className="sf-pill">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 2v20M17 6.5C16 5 14.2 4.5 12 4.5c-2.8 0-4.5 1.3-4.5 3.2 0 4.8 9.5 2.3 9.5 7.1 0 2-2 3.7-5 3.7-2.4 0-4.4-.8-5.5-2.5" /></svg>
+                USD
+              </span>
+            </div>
+
+            <div className="sf-stores">
+              <div className="sf-store"><small>Próximamente en</small><strong>Google Play</strong></div>
+              <div className="sf-store"><small>Próximamente en</small><strong>App Store</strong></div>
+            </div>
+          </div>
+
+          <div className="sf-cols">
+            {TOOL_MENUS.map((m) => (
+              <nav key={m.id} aria-label={m.label}>
+                <h2>{m.label}</h2>
+                {m.items.map((i) => (
+                  <Link key={i.id} to={i.route}>
+                    {i.name}
+                    {i.pro && <span className="sf-pro">Pro</span>}
+                  </Link>
+                ))}
+              </nav>
+            ))}
             <nav aria-label={PRODUCT.name}>
               <h2>{PRODUCT.name}</h2>
               <Link to="/">Inicio</Link>
@@ -76,31 +102,6 @@ export default function SiteFooter() {
                 </>
               )}
             </nav>
-
-            <div className="sf-side">
-              <div className="sf-social">
-                {ICONS.map(({ key, label, svg }) =>
-                  SOCIAL[key] ? (
-                    <a key={key} href={SOCIAL[key]} target="_blank" rel="noopener noreferrer" aria-label={label}>
-                      <SocialIcon label={label} svg={svg} />
-                    </a>
-                  ) : (
-                    <span key={key} className="sf-off"><SocialIcon label={label} svg={svg} /></span>
-                  ),
-                )}
-              </div>
-              <div className="sf-pills">
-                <span className="sf-pill"><ColombiaFlag />Es</span>
-                <span className="sf-pill">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 2v20M17 6.5C16 5 14.2 4.5 12 4.5c-2.8 0-4.5 1.3-4.5 3.2 0 4.8 9.5 2.3 9.5 7.1 0 2-2 3.7-5 3.7-2.4 0-4.4-.8-5.5-2.5" /></svg>
-                  USD
-                </span>
-              </div>
-              <div className="sf-stores">
-                <div className="sf-store"><small>Próximamente en</small><strong>Google Play</strong></div>
-                <div className="sf-store"><small>Próximamente en</small><strong>App Store</strong></div>
-              </div>
-            </div>
           </div>
         </div>
 
