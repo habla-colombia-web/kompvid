@@ -1391,6 +1391,17 @@ export default function VideoEditorPage() {
     setSaveMsg(left.length > 0 ? 'Proyecto abierto. Importa de nuevo: ' + left.map((x) => x.name).join(', ') : 'Proyecto abierto.')
   }
 
+  function handleNew() {
+    if (!window.confirm('Empezar un proyecto nuevo? Lo que no hayas guardado se pierde.')) return
+    setHist({ past: [], present: EMPTY_PROJECT, future: [] })
+    setName('Proyecto sin titulo')
+    setProjectId(null)
+    setPendingRef([])
+    setSel(null)
+    setT(0)
+    setSaveMsg('Proyecto nuevo.')
+  }
+
   async function handleDelete() {
     if (!projectId || !window.confirm('Eliminar este proyecto guardado? No se puede deshacer.')) return
     const r = await deleteProject(projectId)
@@ -1521,7 +1532,7 @@ export default function VideoEditorPage() {
           <option value="fill">Rellenar (recortar bordes)</option>
         </select>
         <span className="ed-top-spacer" />
-        <button type="button" className="ed-btn" onClick={() => void handleSave(false)} disabled={saveState === 'saving' || exporting}>
+        <button type="button" className="ed-btn" onClick={handleNew} disabled={saveState === 'saving' || exporting}>Proyecto nuevo</button><button type="button" className="ed-btn" onClick={() => void handleSave(false)} disabled={saveState === 'saving' || exporting}>
           {saveState === 'saving' ? 'Guardando...' : 'Guardar'}
         </button>
         <button type="button" className="ed-btn" onClick={() => void handleSave(true)} disabled={saveState === 'saving' || exporting}>Guardar como nuevo</button>
