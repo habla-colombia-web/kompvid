@@ -19,27 +19,19 @@ export default function HeroShowcase() {
 
       <div className="hs-stage">
         <figure className="hs-card">
-          <img src="/hero2.webp" alt="Ilustración del video original" loading="eager" />
-          <figcaption className="hs-tag">Original</figcaption>
-        </figure>
-        <figure className="hs-card">
-          <img src="/hero.webp" alt="Ilustración del video comprimido" loading="lazy" />
-          <figcaption className="hs-tag">Comprimido</figcaption>
-          <span className="hs-badge">Menos peso</span>
+          <span className="hs-tag">Original</span>
+          <img src="/hero-antes.webp" alt="Ilustración de un video pesado sobre una báscula" width={900} height={900} />
         </figure>
 
-        <div className="hs-icon" aria-hidden="true">
-          <svg width="64" height="64" viewBox="0 0 64 64">
-            <defs>
-              <linearGradient id="hs-g" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0" stopColor="#2fe0d6" />
-                <stop offset="1" stopColor="#d63bff" />
-              </linearGradient>
-            </defs>
-            <path d="M8 18a6 6 0 0 1 6-6h12l6 6h18a6 6 0 0 1 6 6v26a6 6 0 0 1-6 6H14a6 6 0 0 1-6-6z" fill="url(#hs-g)" />
-            <path d="M27 28v16l14-8z" fill="#fff" />
-          </svg>
+        <div className="hs-arrow" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
         </div>
+
+        <figure className="hs-card">
+          <span className="hs-tag">Comprimido</span>
+          <img src="/hero-despues.webp" alt="Ilustración del mismo video, ahora liviano" width={900} height={900} loading="lazy" />
+          <span className="hs-badge">Menos peso</span>
+        </figure>
       </div>
       <p className="hs-note">Ilustración de ejemplo. El ahorro real depende de cada video.</p>
     </section>
