@@ -18,6 +18,7 @@ import AdminRoute from './admin/AdminRoute'
 import AdminLayout from './admin/AdminLayout'
 import AdminDashboardPage from './admin/AdminDashboardPage'
 import AdminLimitsPage from './admin/AdminLimitsPage'
+import AdminDataPage from './admin/AdminDataPage'
 import AdminPlaceholderPage from './admin/AdminPlaceholderPage'
 
 // Solo las herramientas con estado "active" reciben ruta.
@@ -33,6 +34,10 @@ export default function App() {
         <Route element={<AdminLayout />}>
           <Route index element={<AdminDashboardPage />} />
           <Route path="herramientas" element={<AdminLimitsPage />} />
+          <Route path="usuarios" element={<AdminDataPage kind="usuarios" />} />
+          <Route path="planes" element={<AdminDataPage kind="planes" />} />
+          <Route path="uso" element={<AdminDataPage kind="uso" />} />
+          <Route path="auditoria" element={<AdminDataPage kind="auditoria" />} />
           <Route path=":section" element={<AdminPlaceholderPage />} />
         </Route>
       </Route>
