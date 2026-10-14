@@ -1628,7 +1628,7 @@ export default function VideoEditorPage() {
                 <h2>Texto</h2>
                 <button type="button" className="ed-btn ed-side-act" onClick={() => addText()}><Ico n="text" /> Agregar texto</button>
                 <p className="ed-empty">Arrastra el texto en el visor o en la linea de tiempo.</p>
-                <button type="button" className="ed-btn ed-side-act" disabled={capBusy} onClick={() => void generateCaptions()}><Ico n="text" /> {capBusy ? 'Generando subtitulos...' : 'Generar subtitulos'}</button>
+                <button type="button" className="ed-btn ed-side-act" disabled={capBusy} onClick={() => void generateCaptions()}><Ico n="text" /> {capBusy ? 'Generando automaticamente...' : 'Generar automaticamente'}</button>
                 {(['styles', 'titles'] as const).map((g) => (
                   <div key={g}>
                     <h3 className="ed-tr-h">{g === 'styles' ? 'Estilos de texto' : 'Titulos'}</h3>
