@@ -12,6 +12,7 @@
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
+    "@huggingface/transformers": "^4.3.1",
     "@imgly/background-removal": "^1.7.0",
     "@mintplex-labs/piper-tts-web": "^1.0.5",
     "@supabase/supabase-js": "^2.117.3",

@@ -4,6 +4,7 @@ import './editor.css'
 import { PLANS } from '../../config/product'
 import { usePlan } from '../../core/billing/usePlan'
 import TtsPanel from './TtsPanel'
+import { buildCaptions } from './captionService'
 import { consumeUsage } from '../../core/usage/consumeUsage'
 import { cancelCompression, loadEngine } from '../video-compressor/ffmpegService'
 import { formatBytes } from '../video-compressor/utils'
@@ -272,6 +273,7 @@ export default function VideoEditorPage() {
   const [dragging, setDragging] = useState(false)
   const [importError, setImportError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  const [capBusy, setCapBusy] = useState(false)
   const [shortSide, setShortSide] = useState(720)
   const [expStage, setExpStage] = useState<'idle' | 'preparing' | 'working'>('idle')
   const [progress, setProgress] = useState(0)
@@ -581,6 +583,23 @@ export default function VideoEditorPage() {
       return { ...p, vclips: [...p.vclips.slice(0, at), clip, ...p.vclips.slice(at)] }
     })
     setSel({ kind: 'v', id: clip.id })
+  }
+
+  async function generateCaptions() {
+    setNotice(null)
+    if (capBusy) return
+    if (project.vclips.length === 0) { setNotice('Agrega un video primero.'); return }
+    setCapBusy(true)
+    try {
+      const clips = await buildCaptions(project.vclips, mediaMap, (m) => setNotice(m))
+      if (clips.length === 0) { setNotice('No se detecto voz en el video.'); return }
+      commit((p) => ({ ...p, texts: [...p.texts.filter((x) => !x.id.startsWith('sub-')), ...clips] }))
+      setNotice('Subtitulos listos: ' + clips.length + ' lineas. Puedes editarlas como cualquier texto.')
+    } catch (err) {
+      setNotice('No se pudieron generar los subtitulos: ' + (err instanceof Error ? err.message : String(err)))
+    } finally {
+      setCapBusy(false)
+    }
   }
 
   function addText(sd?: TextStyleDef) {
@@ -1609,6 +1628,7 @@ export default function VideoEditorPage() {
                 <h2>Texto</h2>
                 <button type="button" className="ed-btn ed-side-act" onClick={() => addText()}><Ico n="text" /> Agregar texto</button>
                 <p className="ed-empty">Arrastra el texto en el visor o en la linea de tiempo.</p>
+                <button type="button" className="ed-btn ed-side-act" disabled={capBusy} onClick={() => void generateCaptions()}><Ico n="text" /> {capBusy ? 'Generando subtitulos...' : 'Generar subtitulos'}</button>
                 {(['styles', 'titles'] as const).map((g) => (
                   <div key={g}>
                     <h3 className="ed-tr-h">{g === 'styles' ? 'Estilos de texto' : 'Titulos'}</h3>
