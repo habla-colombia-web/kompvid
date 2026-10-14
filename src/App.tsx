@@ -14,6 +14,9 @@ import ResetPasswordPage from './pages/ResetPasswordPage'
 import AccountPage from './pages/AccountPage'
 import DashboardPage from './pages/DashboardPage'
 import NotFoundPage from './pages/NotFoundPage'
+import PrivacyPage from './pages/PrivacyPage'
+import TermsPage from './pages/TermsPage'
+import SubscriptionPolicyPage from './pages/SubscriptionPolicyPage'
 import AdminRoute from './admin/AdminRoute'
 import AdminLayout from './admin/AdminLayout'
 import AdminDashboardPage from './admin/AdminDashboardPage'
@@ -51,6 +54,9 @@ export default function App() {
 
       <Route element={<Layout />}>
         <Route index element={<><HeroShowcase /><HomePage /></>} />
+        <Route path="privacidad" element={<PrivacyPage />} />
+        <Route path="terminos" element={<TermsPage />} />
+        <Route path="suscripcion" element={<SubscriptionPolicyPage />} />
         <Route path="pricing" element={<PricingPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="register" element={<RegisterPage />} />

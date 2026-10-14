@@ -33,3 +33,4 @@
 .au-hint{margin:0 0 12px;color:#5b5b7a;font-size:.8rem}
 .au-foot{margin:18px 0 0;text-align:center;color:#8a8aa8;font-size:.8rem}
 @media (max-width:480px){.au-card{padding:24px 18px}}
+.au-foot a{color:#6d3df0;font-weight:600}

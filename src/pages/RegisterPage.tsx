@@ -66,7 +66,7 @@ export default function RegisterPage() {
           <span>¿Ya tienes cuenta?</span>
           <Link to="/login">Iniciar sesión</Link>
         </div>
-        <p className="au-foot">Tus archivos se procesan en tu dispositivo.</p>
+        <p className="au-foot">Al crear tu cuenta aceptas los <Link to="/terminos">Términos y condiciones</Link> y la <Link to="/privacidad">Política de privacidad</Link>.</p>
       </div>
     </section>
   )

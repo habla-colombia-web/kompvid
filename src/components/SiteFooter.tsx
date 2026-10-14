@@ -109,6 +109,7 @@ export default function SiteFooter() {
         </div>
 
         <div className="sf-bottom">
+          <nav className="sf-legal" aria-label="Legal"><Link to="/terminos">Términos y condiciones</Link><Link to="/privacidad">Privacidad y cookies</Link><Link to="/suscripcion">Políticas de suscripción</Link></nav>
           <p>&copy; {YEAR} {PRODUCT.name}. Todos los derechos reservados.</p>
         </div>
       </div>

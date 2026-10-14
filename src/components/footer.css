@@ -53,3 +53,7 @@ footer.site-footer { padding: 28px 0 16px; margin-top: 40px; }
 @media (max-width: 640px) {
   .sf-cols nav[aria-label="Herramientas"] { grid-template-columns: 1fr; justify-items: center; }
 }
+.sf-legal{display:flex;flex-wrap:wrap;gap:8px 22px;margin:0 0 14px}
+.sf-legal a{color:#c9c4ea;text-decoration:none;font-size:.88rem}
+.sf-legal a:hover,.sf-legal a:focus-visible{color:#fff;text-decoration:underline}
+@media (max-width:640px){.sf-legal{justify-content:center}}
