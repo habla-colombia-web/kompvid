@@ -3,7 +3,6 @@ import SiteHeader from './SiteHeader'
 import NoticeBanner from './NoticeBanner'
 import Seo from './Seo'
 import SiteFooter from './SiteFooter'
-import EditorChrome from './EditorChrome'
 
 export default function Layout() {
   const { pathname } = useLocation()
@@ -17,7 +16,6 @@ export default function Layout() {
         <Outlet />
       </main>
       {!bare && <SiteFooter />}
-      {bare && <EditorChrome />}
     </>
   )
 }

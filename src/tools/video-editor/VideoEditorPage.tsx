@@ -7,6 +7,7 @@ import TtsPanel from './TtsPanel'
 import { buildCaptions } from './captionService'
 import { consumeUsage } from '../../core/usage/consumeUsage'
 import { cancelCompression, loadEngine } from '../video-compressor/ffmpegService'
+import EditorChrome from '../../components/EditorChrome'
 import { formatBytes } from '../video-compressor/utils'
 import { exportProject } from './exportService'
 import { extractAudio } from './audioService'
@@ -1521,6 +1522,7 @@ export default function VideoEditorPage() {
         </button>
         <button type="button" className="ed-btn" onClick={undo} disabled={hist.past.length === 0 || exporting}>Deshacer</button>
         <button type="button" className="ed-btn" onClick={redo} disabled={hist.future.length === 0 || exporting}>Rehacer</button>
+        <EditorChrome />
       </div>
 
       <div className={'ed-main' + (rOpen ? '' : ' ed-rhide')}>
