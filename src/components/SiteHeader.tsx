@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { PRODUCT } from '../config/product'
 import { useAuth } from '../core/auth/useAuth'
@@ -26,6 +26,22 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 const CATEGORY_ORDER = ['video', 'image', 'audio', 'document']
 
+const CATEGORY_ICONS: Record<string, ReactNode> = {
+  video: <><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M10 9.5v5l4.5-2.5z" /></>,
+  image: <><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="9" cy="9" r="1.6" /><path d="m21 15-5-5L5 21" /></>,
+  audio: <><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></>,
+  document: <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></>,
+}
+
+function CategoryIcon({ category }: { category: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {CATEGORY_ICONS[category] ?? CATEGORY_ICONS.document}
+    </svg>
+  )
+}
+
 function actionOf(id: string): Action {
   if (COMPRESS.includes(id)) return 'compress'
   if (CONVERT.includes(id)) return 'convert'
@@ -35,6 +51,7 @@ function actionOf(id: string): Action {
 const ITEMS = getActiveTools().map((t) => ({
   id: t.id,
   name: t.name,
+  description: String(t.description ?? ''),
   route: t.route,
   category: String(t.category),
   pro: t.requiredPlan === 'pro',
@@ -132,11 +149,14 @@ export default function SiteHeader() {
                 {openMenu === m.id && (
                   <div className="sh-mega" id={'sh-menu-' + m.id}>
                     {m.groups.map((g) => (
-                      <div className="sh-col" key={g.category}>
-                        <h3>{g.label}</h3>
+                      <div className="sh-group" key={g.category}>
+                        <p className="sh-group-title"><CategoryIcon category={g.category} />{g.label}</p>
                         {g.items.map((i) => (
-                          <Link key={i.id} to={i.route} onClick={closeAll}>
-                            {i.name}
+                          <Link key={i.id} className="sh-opt" to={i.route} onClick={closeAll}>
+                            <span className="sh-opt-text">
+                              <span className="sh-opt-name">{i.name}</span>
+                              {i.description && <span className="sh-opt-desc">{i.description}</span>}
+                            </span>
                             {i.pro && <span className="sh-pro">Pro</span>}
                           </Link>
                         ))}
