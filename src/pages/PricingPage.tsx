@@ -83,9 +83,7 @@ export default function PricingPage() {
             <li><Check />Todo lo del plan Gratis</li>
             <li><Check />Sin límite diario de usos</li>
             <li><Check />Hasta {proMB} MB por archivo</li>
-            {proOnly.map((t) => (
-              <li key={t.id}><Check />{t.name} <em>(solo Pro)</em></li>
-            ))}
+            <li><Check />Además, {proOnly.length} herramientas exclusivas (abajo)</li>
           </ul>
         </article>
       </div>
@@ -99,15 +97,24 @@ export default function PricingPage() {
         </ul>
       </div>
 
-      <div className="pr-tools">
-        <h2>Herramientas por plan</h2>
+      <div className="pr-tools pr-tools-free">
+        <h2>Herramientas gratis</h2>
+        <p className="pr-tools-sub">Incluidas con tu cuenta gratuita ({freeTools.length}).</p>
         <ul>
-          {tools.map((t) => (
+          {freeTools.map((t) => (
+            <li key={t.id}><Link to={t.route}>{t.name}</Link></li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="pr-tools pr-tools-pro">
+        <h2>Herramientas Pro</h2>
+        <p className="pr-tools-sub">Exclusivas del plan Kompvid Pro ({proOnly.length}).</p>
+        <ul>
+          {proOnly.map((t) => (
             <li key={t.id}>
-              <span>{t.name}</span>
-              <span className={'pr-tag' + (t.requiredPlan === 'pro' ? ' pr-tag-pro' : '')}>
-                {t.requiredPlan === 'pro' ? 'Pro' : 'Gratis'}
-              </span>
+              <span className="pr-tool-name">{t.name}</span>
+              {t.description && <span className="pr-tool-desc">{t.description}</span>}
             </li>
           ))}
         </ul>

@@ -30,20 +30,33 @@
 .pr-note{font-size:.85rem;color:#c9c4ea;text-align:center}
 .pr-list{list-style:none;margin:8px 0 0;padding:16px 0 0;border-top:1px solid rgba(120,120,160,.25);display:flex;flex-direction:column;gap:12px}
 .pr-list li{display:flex;align-items:flex-start;gap:10px}
-.pr-list em{font-style:normal;opacity:.7;font-size:.85rem}
 .pr-check{flex:none;color:#22c993;margin-top:1px}
-.pr-band{max-width:960px;margin:0 auto 48px;text-align:center}
+.pr-band{max-width:960px;margin:0 auto 56px;text-align:center}
 .pr-band h2{font-size:1.4rem;margin-bottom:16px}
 .pr-band ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:14px 28px}
 .pr-band li{display:flex;align-items:center;gap:8px}
-.pr-tools{max-width:960px;margin:0 auto 48px}
-.pr-tools h2,.pr-faq h2{font-size:1.4rem;margin-bottom:16px;text-align:center}
-.pr-tools ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px}
-.pr-tools li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;background:#fff;
-  border:1px solid #e1e4f0;border-radius:12px}
-.pr-tag{padding:3px 12px;border-radius:999px;background:#d9f7ec;color:#0b7a55;font-size:.78rem;font-weight:700}
-.pr-tag-pro{background:#0a0030;color:#fff}
+
+.pr-tools{max-width:960px;margin:0 auto 40px;padding:28px;border-radius:20px}
+.pr-tools h2{font-size:1.4rem}
+.pr-tools-sub{margin:6px 0 20px !important;font-size:.95rem}
+.pr-tools ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.pr-tools li{min-width:0}
+.pr-tools-free{background:#fff;border:1px solid #e1e4f0}
+.pr-tools-free .pr-tools-sub{color:#5b5b7a}
+.pr-tools-free li a{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;background:#f6f7fb;
+  color:#0a0030;text-decoration:none;font-weight:500}
+.pr-tools-free li a::before{content:'';flex:none;width:8px;height:8px;border-radius:50%;background:#22c993}
+.pr-tools-free li a:hover{background:#eceefa}
+.pr-tools-free li a:focus-visible{outline:3px solid #2fe0d6;outline-offset:2px}
+.pr-tools-pro{background:#0a0030;color:#fff}
+.pr-tools-pro .pr-tools-sub{color:#c9c4ea}
+.pr-tools-pro li{display:flex;flex-direction:column;gap:4px;padding:16px;border-radius:14px;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.14)}
+.pr-tool-name{font-weight:700}
+.pr-tool-desc{font-size:.88rem;color:#c9c4ea}
+
 .pr-faq{max-width:760px;margin:0 auto}
+.pr-faq h2{font-size:1.4rem;margin-bottom:16px;text-align:center}
 .pr-faq details{background:#fff;border:1px solid #e1e4f0;border-radius:14px;margin-bottom:10px;box-shadow:0 4px 14px rgba(10,0,51,.04)}
 .pr-faq summary{cursor:pointer;padding:18px 20px;font-weight:700;list-style:none;display:flex;justify-content:space-between;gap:12px}
 .pr-faq summary::-webkit-details-marker{display:none}
@@ -51,3 +64,4 @@
 .pr-faq details[open] summary::after{content:'\2212'}
 .pr-faq summary:focus-visible{outline:3px solid #2fe0d6;outline-offset:2px;border-radius:14px}
 .pr-faq details p{padding:0 20px 18px;color:#5b5b7a}
+@media (max-width:640px){.pr-tools{padding:20px}}
