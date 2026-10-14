@@ -46,12 +46,6 @@ const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'webp']
 const VIDEO_EXT = ['mp4', 'webm', 'mov', 'm4v']
 const AUDIO_EXT = ['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac']
 
-const SIDE_FUTURE = [
-  
-  { label: 'Biblioteca de recursos', tag: 'Futuro' },
-  
-  
-]
 
 interface Hist {
   past: Project[]
@@ -199,10 +193,30 @@ function RTabIco({ n }: { n: string }) {
   }
 }
 
-type RailTab = 'media' | 'record' | 'library' | 'text' | 'trans'
+type RailTab = 'media' | 'record' | 'templates' | 'library' | 'text' | 'trans'
+
+const TEMPLATES: { id: string; label: string; format: CanvasFormatId; texts: Omit<TextClip, 'id'>[] }[] = [
+  { id: 'yt', label: 'YouTube', format: 'landscape', texts: [{ text: 'Titulo del video', start: 0, duration: 3, size: 9, color: '#ffffff', bg: true, x: 50, y: 50 }] },
+  { id: 'tt', label: 'TikTok', format: 'vertical', texts: [{ text: 'Tu mensaje aqui', start: 0, duration: 3, size: 6, color: '#ffffff', bg: true, x: 50, y: 70 }] },
+  { id: 'reels', label: 'Instagram Reels', format: 'vertical', texts: [{ text: 'Tu mensaje aqui', start: 0, duration: 3, size: 6, color: '#ffffff', bg: false, x: 50, y: 20 }] },
+  { id: 'feed', label: 'Instagram y Facebook Feed', format: 'portrait', texts: [{ text: 'Titulo', start: 0, duration: 3, size: 8, color: '#ffffff', bg: true, x: 50, y: 85 }] },
+  { id: 'sq', label: 'Cuadrado', format: 'square', texts: [{ text: 'Titulo', start: 0, duration: 3, size: 9, color: '#ffffff', bg: true, x: 50, y: 50 }] },
+]
+
+const SHAPES = [
+  { id: 'square', label: 'Cuadrado', d: 'M4 4h16v16H4z' },
+  { id: 'circle', label: 'Circulo', d: 'M12 3a9 9 0 1 0 0.01 0z' },
+  { id: 'triangle', label: 'Triangulo', d: 'M12 3l9 18H3z' },
+  { id: 'star', label: 'Estrella', d: 'M12 2l3 7 7 .7-5.3 4.8 1.6 7.5L12 18l-6.3 4 1.6-7.5L2 9.7 9 9z' },
+  { id: 'heart', label: 'Corazon', d: 'M12 21C5 15 3 11 3 8a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 3-2 7-9 13z' },
+  { id: 'arrow', label: 'Flecha', d: 'M3 9h10V4l8 8-8 8v-5H3z' },
+] as const
+
+interface LibItem { genre: string; name: string; file: string }
 const RAIL: { id: RailTab; label: string }[] = [
   { id: 'media', label: 'Mi multimedia' },
   { id: 'record', label: 'Grabar y crear' },
+  { id: 'templates', label: 'Plantillas' },
   { id: 'library', label: 'Biblioteca' },
   { id: 'text', label: 'Texto' },
   { id: 'trans', label: 'Transiciones' },
@@ -215,6 +229,7 @@ function RailIco({ n }: { n: RailTab }) {
     case 'record': return (<svg {...p}><rect x="2" y="6" width="14" height="12" rx="2" /><polygon points="22 8 16 12 22 16 22 8" /></svg>)
     case 'library': return (<svg {...p}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><polyline points="21 15 16 10 5 21" /></svg>)
     case 'text': return (<svg {...p}><polyline points="4 7 4 4 20 4 20 7" /><line x1="9" y1="20" x2="15" y2="20" /><line x1="12" y1="4" x2="12" y2="20" /></svg>)
+    case 'templates': return (<svg {...p}><rect x="3" y="3" width="8" height="8" rx="1" /><rect x="13" y="3" width="8" height="8" rx="1" /><rect x="3" y="13" width="8" height="8" rx="1" /><rect x="13" y="13" width="8" height="8" rx="1" /></svg>)
     default: return (<svg {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><polygon points="8 8 12 12 8 16" /><polygon points="16 8 12 12 16 16" /></svg>)
   }
 }
@@ -266,6 +281,20 @@ export default function VideoEditorPage() {
   const [rOpen, setROpen] = useState(true)
   const [fxQ, setFxQ] = useState('')
   const [sepBusy, setSepBusy] = useState(false)
+  const [shapeColor, setShapeColor] = useState('#7c3aed')
+  const [libItems, setLibItems] = useState<LibItem[]>([])
+  useEffect(() => {
+    let on = true
+    fetch('/audio/manifest.json')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((j: unknown) => {
+        if (on && Array.isArray(j)) setLibItems((j as LibItem[]).filter((x) => x && typeof x.file === 'string' && typeof x.name === 'string' && typeof x.genre === 'string'))
+      })
+      .catch(() => undefined)
+    return () => {
+      on = false
+    }
+  }, [])
   const [rtab, setRtab] = useState<'edit' | 'color' | 'fade' | 'audio' | 'filter' | 'fx'>('edit')
   const [recMode, setRecMode] = useState<'camera' | 'screen' | 'mic' | null>(null)
   const recRef = useRef<MediaRecorder | null>(null)
@@ -932,6 +961,73 @@ export default function VideoEditorPage() {
     })
   }
 
+  function dropOnCanvas(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    if (e.dataTransfer.files.length > 0) { void handleFiles(e.dataTransfer.files); return }
+    const m = mediaMap.get(e.dataTransfer.getData('text/kompvid-media'))
+    if (!m) return
+    if (m.kind === 'image') addOverlay(m, t)
+    else addToTimeline(m)
+  }
+
+  function applyTemplate(tp: (typeof TEMPLATES)[number]) {
+    if (project.texts.length + tp.texts.length > limits.maxTexts) { setNotice('Tu plan permite hasta ' + limits.maxTexts + ' textos.'); return }
+    commit((p) => ({ ...p, format: tp.format, texts: [...p.texts, ...tp.texts.map((x) => ({ ...x, id: uid() }))] }))
+  }
+
+  async function addShape(kind: (typeof SHAPES)[number]['id']) {
+    const S = 400
+    const cv = document.createElement('canvas')
+    cv.width = S
+    cv.height = S
+    const cx = cv.getContext('2d')
+    if (!cx) { setNotice('Tu navegador no pudo crear la forma.'); return }
+    cx.fillStyle = shapeColor
+    cx.beginPath()
+    if (kind === 'square') cx.rect(20, 20, 360, 360)
+    else if (kind === 'circle') cx.arc(200, 200, 180, 0, Math.PI * 2)
+    else if (kind === 'triangle') { cx.moveTo(200, 20); cx.lineTo(380, 380); cx.lineTo(20, 380); cx.closePath() }
+    else if (kind === 'star') {
+      for (let i = 0; i < 10; i++) {
+        const r = i % 2 === 0 ? 190 : 80
+        const a = (Math.PI / 5) * i - Math.PI / 2
+        const px = 200 + r * Math.cos(a)
+        const py = 200 + r * Math.sin(a)
+        if (i === 0) cx.moveTo(px, py)
+        else cx.lineTo(px, py)
+      }
+      cx.closePath()
+    } else if (kind === 'heart') {
+      cx.moveTo(200, 360)
+      cx.bezierCurveTo(-40, 200, 60, 20, 200, 130)
+      cx.bezierCurveTo(340, 20, 440, 200, 200, 360)
+    } else {
+      cx.moveTo(20, 150); cx.lineTo(220, 150); cx.lineTo(220, 40); cx.lineTo(380, 200); cx.lineTo(220, 360); cx.lineTo(220, 250); cx.lineTo(20, 250); cx.closePath()
+    }
+    cx.fill()
+    const blob = await new Promise<Blob | null>((resolve) => cv.toBlob(resolve, 'image/png'))
+    if (!blob) { setNotice('No se pudo crear la forma.'); return }
+    const file = new File([blob], 'forma-' + kind + '-' + Date.now() + '.png', { type: 'image/png' })
+    await handleFiles([file])
+    const m = mediaRef.current[mediaRef.current.length - 1]
+    if (m && m.name === file.name) addOverlay(m, t)
+  }
+
+  async function addLibAudio(it: LibItem) {
+    try {
+      const r = await fetch('/audio/' + it.file)
+      if (!r.ok) throw new Error('no encontrado')
+      const b = await r.blob()
+      const ext = /\.[a-z0-9]+$/i.exec(it.file)?.[0] ?? '.mp3'
+      const file = new File([b], it.name.replace(/[^a-zA-Z0-9 _-]/g, '') + ext, { type: b.type || 'audio/mpeg' })
+      await handleFiles([file])
+      const m = mediaRef.current[mediaRef.current.length - 1]
+      if (m && m.kind === 'audio' && m.name === file.name) addToTimeline(m, t)
+    } catch {
+      setNotice('No se pudo cargar ese audio. Revisa que el archivo exista en public/audio.')
+    }
+  }
+
   function startScrub(e: React.PointerEvent<HTMLDivElement>) {
     setPlaying(false)
     const rect = e.currentTarget.getBoundingClientRect()
@@ -1444,6 +1540,7 @@ export default function VideoEditorPage() {
                         {m.kind === 'audio' && <Ico n="audio" />}
                         {m.kind !== 'image' && <span className="ed-dur">{fmt(m.duration)}</span>}
                         <button type="button" className="ed-card-x" onClick={() => removeMedia(m.id)} aria-label="Quitar archivo" title="Quitar"><Ico n="trash" /></button>
+                        {m.kind === 'image' && <button type="button" className="ed-card-ov" onClick={() => addOverlay(m, t)} title="Poner encima del video">Superponer</button>}
                         <button type="button" className="ed-card-add" onClick={() => addToTimeline(m)} aria-label="Agregar a la linea de tiempo" title="Agregar"><Ico n="plus" /></button>
                       </div>
                       <strong title={m.name}>{m.name}</strong>
@@ -1463,11 +1560,44 @@ export default function VideoEditorPage() {
                 <p className="ed-empty">La grabacion queda en Mi multimedia.</p>
               </>
             )}
+            {tab === 'templates' && (
+              <>
+                <h2>Plantillas</h2>
+                <div className="ed-tpl-grid">
+                  {TEMPLATES.map((tp) => {
+                    const f = CANVAS_FORMATS.find((x) => x.id === tp.format) ?? CANVAS_FORMATS[0]
+                    return (
+                      <button key={tp.id} type="button" className="ed-tpl-card" onClick={() => applyTemplate(tp)}>
+                        <span className="ed-tpl-pic" style={{ aspectRatio: f.ratioW + ' / ' + f.ratioH }}>{f.label}</span>
+                        <span className="ed-tpl-name">{tp.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <p className="ed-empty">Cambia el formato y agrega un texto base. Tus clips no se tocan.</p>
+              </>
+            )}
             {tab === 'library' && (
               <>
                 <h2>Biblioteca</h2>
-                {SIDE_FUTURE.map((s) => (
-                  <p key={s.label} className="ed-empty">{s.label}: proximamente.</p>
+                <h3 className="ed-lib-h">Formas</h3>
+                <label className="ed-slider-row">Color <input type="color" value={shapeColor} onChange={(e) => setShapeColor(e.target.value)} /></label>
+                <div className="ed-shapes">
+                  {SHAPES.map((s) => (
+                    <button key={s.id} type="button" className="ed-shape" onClick={() => void addShape(s.id)} title={s.label} aria-label={s.label}>
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill={shapeColor} aria-hidden="true"><path d={s.d} /></svg>
+                    </button>
+                  ))}
+                </div>
+                <h3 className="ed-lib-h">Audio libre de derechos</h3>
+                {libItems.length === 0 && <p className="ed-empty">Aun no hay audios. Agrega archivos con licencia en public/audio y listalos en public/audio/manifest.json.</p>}
+                {Array.from(new Set(libItems.map((x) => x.genre))).map((g) => (
+                  <div key={g} className="ed-lib-genre">
+                    <h4>{g}</h4>
+                    {libItems.filter((x) => x.genre === g).map((x) => (
+                      <button key={x.file} type="button" className="ed-btn ed-side-act" onClick={() => void addLibAudio(x)}><Ico n="audio" /> {x.name}</button>
+                    ))}
+                  </div>
                 ))}
               </>
             )}
@@ -1518,8 +1648,16 @@ export default function VideoEditorPage() {
         </aside>
 
         <div className="ed-preview">
+          <div className="ed-prevbar">
+            <button type="button" className="ed-btn ed-btn-small" onClick={undo} disabled={hist.past.length === 0 || exporting} aria-label="Atras" title="Atras (deshacer)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg>
+            </button>
+            <button type="button" className="ed-btn ed-btn-small" onClick={redo} disabled={hist.future.length === 0 || exporting} aria-label="Adelante" title="Adelante (rehacer)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5" /><path d="M20 9H10a6 6 0 0 0 0 12h3" /></svg>
+            </button>
+          </div>
           <div className="ed-stage">
-            <div className="ed-canvas" style={{ aspectRatio: format.ratioW + ' / ' + format.ratioH, '--ar': format.ratioW / format.ratioH } as React.CSSProperties}>
+            <div className="ed-canvas" onDragOver={(e) => e.preventDefault()} onDrop={dropOnCanvas} style={{ aspectRatio: format.ratioW + ' / ' + format.ratioH, '--ar': format.ratioW / format.ratioH } as React.CSSProperties}>
               <video
                 ref={videoRef}
                 muted={!project.keepVideoAudio || (active?.clip.vol ?? 1) === 0}
