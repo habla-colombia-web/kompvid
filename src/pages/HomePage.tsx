@@ -1,6 +1,4 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { tools } from '../core/tools/registry'
 import './home.css'
 
 const STEPS = [
@@ -9,53 +7,9 @@ const STEPS = [
   { title: 'Descarga el resultado', text: 'Compara el antes y el después y guarda el archivo comprimido.' },
 ]
 
-const FEATURED = ['video-editor', 'background-remover', 'video-compressor', 'image-compressor', 'video-converter', 'image-resizer']
-
-function ToolIcon({ id }: { id: string }) {
-  const isImage = id.includes('background') || id.includes('image')
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
-      strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {isImage ? (
-        <><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="9" cy="9" r="1.6" /><path d="m21 15-5-5L5 21" /></>
-      ) : (
-        <><rect x="2" y="5" width="20" height="14" rx="3" /><path d="M10 9.5v5l4.5-2.5z" /></>
-      )}
-    </svg>
-  )
-}
-
 export default function HomePage() {
-  const [showAll, setShowAll] = useState(false)
-  const featured = FEATURED.map((id) => tools.find((t) => t.id === id)).filter((t): t is (typeof tools)[number] => Boolean(t))
-  const shown = showAll || featured.length === 0 ? tools : featured
   return (
     <>
-      <section className="hm-section" id="herramientas">
-        <h2>Herramientas</h2>
-        <ul className="hm-tools">
-          {shown.map((tool) => (
-            <li key={tool.id} className="hm-tool">
-              <span className="hm-tool-icon"><ToolIcon id={tool.id} /></span>
-              <h3>{tool.name}</h3>
-              <p>{tool.description}</p>
-              {tool.status === 'active' ? (
-                <Link className="hm-btn" to={tool.route}>Abrir</Link>
-              ) : (
-                <span className="hm-soon">Próximamente</span>
-              )}
-            </li>
-          ))}
-        </ul>
-        {featured.length > 0 && tools.length > featured.length && (
-          <p style={{ textAlign: 'center', marginTop: 24 }}>
-            <button type="button" className="hm-btn" onClick={() => setShowAll((v) => !v)}>
-              {showAll ? 'Ver menos' : 'Ver todas las herramientas'}
-            </button>
-          </p>
-        )}
-      </section>
-
       <section className="hm-band" id="como-funciona">
         <div className="hm-inner">
           <h2>Cómo funciona</h2>
