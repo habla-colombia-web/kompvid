@@ -275,6 +275,13 @@ export default function VideoEditorPage() {
   const [importError, setImportError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [capBusy, setCapBusy] = useState(false)
+  const [bigPreview, setBigPreview] = useState(false)
+  useEffect(() => {
+    if (!bigPreview) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setBigPreview(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [bigPreview])
   const [shortSide, setShortSide] = useState(720)
   const [expStage, setExpStage] = useState<'idle' | 'preparing' | 'working'>('idle')
   const [progress, setProgress] = useState(0)
@@ -1691,7 +1698,7 @@ export default function VideoEditorPage() {
           </div>
         </aside>
 
-        <div className="ed-preview">
+        <div className={'ed-preview' + (bigPreview ? ' ed-preview-big' : '')}>
           <div className="ed-prevbar">
             <button type="button" className="ed-btn ed-btn-small" onClick={undo} disabled={hist.past.length === 0 || exporting} aria-label="Atras" title="Atras (deshacer)">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg>
@@ -1748,7 +1755,7 @@ export default function VideoEditorPage() {
             </div>
           </div>
           <div className="ed-controls">
-            <button type="button" className="ed-btn" onClick={togglePlay} disabled={playEnd <= 0 || exporting}>
+            <button type="button" className="ed-btn" onClick={() => setBigPreview((v) => !v)} aria-pressed={bigPreview} title="Ver la vista previa en grande (Esc para volver)">{bigPreview ? 'Cerrar vista grande' : '🔍 Vista grande'}</button><button type="button" className="ed-btn" onClick={togglePlay} disabled={playEnd <= 0 || exporting}>
               {playing ? 'Pausar' : 'Reproducir'}
             </button>
             <span>{fmt(t)} / {fmt(total)}</span>

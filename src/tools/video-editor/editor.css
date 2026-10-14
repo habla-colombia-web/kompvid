@@ -329,3 +329,7 @@ section.ed.wrap .ed-fx2-card.is-on .ed-fx2-name { font-weight: 700; }
 .ed-shapes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .ed-shape { display: flex; align-items: center; justify-content: center; padding: 10px 0; border: 1px solid var(--bd); border-radius: 8px; background: var(--bg); cursor: pointer; }
 .ed-shape:hover { border-color: var(--ac); }
+/* Vista previa ampliada */
+section.ed.wrap .ed-preview.ed-preview-big { position: fixed; inset: 0; z-index: 1000; width: auto; height: auto; max-height: none; padding: 12px; border-radius: 0; background: var(--pn, #0f1b33); overflow: hidden; }
+section.ed.wrap .ed-preview.ed-preview-big .ed-stage { flex: 1 1 0; height: auto; min-height: 0; }
+section.ed.wrap .ed-preview.ed-preview-big .ed-timeline { display: none; }
