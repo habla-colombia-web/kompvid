@@ -22,6 +22,12 @@ const STEPS = [
   },
 ]
 
+const WHY = [
+  '\u00bfTienes un video demasiado pesado para enviarlo por WhatsApp o correo, o para subirlo a Instagram, Facebook o YouTube? Con Kompvid puedes reducir su peso y conservar la calidad que necesitas.',
+  'Un archivo m\u00e1s liviano se sube m\u00e1s r\u00e1pido, ocupa menos espacio en tu dispositivo y se comparte sin errores por l\u00edmite de tama\u00f1o.',
+  'No necesitas saber de edici\u00f3n: eliges el video, defines el tama\u00f1o y descargas el resultado. Todo se procesa en tu dispositivo, sin subir tus archivos a ning\u00fan servidor.',
+]
+
 function StepIcon({ n }: { n: number }) {
   const p = { width: 34, height: 34, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.6, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, 'aria-hidden': true }
   if (n === 0) return (<svg {...p}><path d="M12 16V4" /><path d="m7 9 5-5 5 5" /><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>)
@@ -44,6 +50,13 @@ export default function HomePage() {
               </li>
             ))}
           </ol>        </div>
+      </section>
+
+      <section className="hm-section hm-why" id="por-que-reducir">
+        <h2>{'\u00bfPor qu\u00e9 reducir el tama\u00f1o de un video?'}</h2>
+        {WHY.map((t) => (
+          <p key={t.slice(0, 24)}>{t}</p>
+        ))}
       </section>
 
       <section className="hm-section">

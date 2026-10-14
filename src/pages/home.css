@@ -48,3 +48,7 @@
 @media (max-width: 900px) { .hm-how { grid-template-columns: 1fr; } }
 /* Titulo Como funciona centrado */
 #como-funciona h2 { text-align: center; }
+/* Por que reducir el tamano */
+.hm-why { max-width: 780px; margin-left: auto; margin-right: auto; }
+.hm-why h2 { text-align: center; margin-bottom: 24px; }
+.hm-why p { line-height: 1.8; font-size: 1rem; margin: 0 0 16px; }
