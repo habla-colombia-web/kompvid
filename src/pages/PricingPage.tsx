@@ -16,7 +16,7 @@ const FREE_FEATURES = [
 const PRO_PLANNED = [
   'Tamaño objetivo personalizado',
   'Ajustes avanzados de calidad y resolución',
-  'Archivos de mayor tamaño, sujeto a pruebas técnicas',
+  'Archivos de hasta ' + PLANS.pro.maxFileMB + ' MB por archivo',
   'Acceso a nuevas herramientas premium',
 ]
 

@@ -19,7 +19,7 @@ export const PLANS = {
     currency: 'USD',
     priceMonthly: 9.99,
     priceYearly: 39.99,
-    maxFileMB: null as number | null,
+    maxFileMB: 500 as number | null,
     dailyOperations: null as number | null,
   },
 } as const
