@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import './editor.css'
 import { PLANS } from '../../config/product'
 import { usePlan } from '../../core/billing/usePlan'
+import TtsPanel from './TtsPanel'
 import { consumeUsage } from '../../core/usage/consumeUsage'
 import { cancelCompression, loadEngine } from '../video-compressor/ffmpegService'
 import { formatBytes } from '../video-compressor/utils'
@@ -193,7 +194,7 @@ function RTabIco({ n }: { n: string }) {
   }
 }
 
-type RailTab = 'media' | 'record' | 'templates' | 'library' | 'text' | 'trans'
+type RailTab = 'media' | 'record' | 'templates' | 'library' | 'text' | 'trans' | 'tts'
 
 const TEMPLATES: { id: string; label: string; format: CanvasFormatId; texts: Omit<TextClip, 'id'>[] }[] = [
   { id: 'yt', label: 'YouTube', format: 'landscape', texts: [{ text: 'Titulo del video', start: 0, duration: 3, size: 9, color: '#ffffff', bg: true, x: 50, y: 50 }] },
@@ -220,6 +221,7 @@ const RAIL: { id: RailTab; label: string }[] = [
   { id: 'library', label: 'Biblioteca' },
   { id: 'text', label: 'Texto' },
   { id: 'trans', label: 'Transiciones' },
+  { id: 'tts', label: 'Texto a voz' },
 ]
 
 function RailIco({ n }: { n: RailTab }) {
@@ -229,6 +231,7 @@ function RailIco({ n }: { n: RailTab }) {
     case 'record': return (<svg {...p}><rect x="2" y="6" width="14" height="12" rx="2" /><polygon points="22 8 16 12 22 16 22 8" /></svg>)
     case 'library': return (<svg {...p}><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><polyline points="21 15 16 10 5 21" /></svg>)
     case 'text': return (<svg {...p}><polyline points="4 7 4 4 20 4 20 7" /><line x1="9" y1="20" x2="15" y2="20" /><line x1="12" y1="4" x2="12" y2="20" /></svg>)
+    case 'tts': return (<svg {...p}><path d="M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" /><path d="M19 10v1a7 7 0 0 1-14 0v-1" /><line x1="12" y1="18" x2="12" y2="22" /></svg>)
     case 'templates': return (<svg {...p}><rect x="3" y="3" width="8" height="8" rx="1" /><rect x="13" y="3" width="8" height="8" rx="1" /><rect x="3" y="13" width="8" height="8" rx="1" /><rect x="13" y="13" width="8" height="8" rx="1" /></svg>)
     default: return (<svg {...p}><rect x="3" y="4" width="18" height="16" rx="2" /><polygon points="8 8 12 12 8 16" /><polygon points="16 8 12 12 16 16" /></svg>)
   }
@@ -1620,7 +1623,8 @@ export default function VideoEditorPage() {
                 ))}
               </>
             )}
-            {tab === 'trans' && (
+            {tab === 'tts' && <TtsPanel onFile={(f) => { void handleFiles([f]); setTab('media') }} />}
+          {tab === 'trans' && (
               <>
                 <h2>Transiciones</h2>
                 <input className="ed-search" type="search" placeholder="Buscar transiciones" value={trQ} onChange={(e) => setTrQ(e.target.value)} aria-label="Buscar transiciones" />
