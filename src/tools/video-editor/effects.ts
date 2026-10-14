@@ -10,7 +10,7 @@ interface FxDef {
 
 const zoom = (rate: number, cap: number) => (t: number) => 'scale(' + Math.min(cap, 1 + rate * t).toFixed(4) + ')'
 const zp = (w: number, h: number, z: string, dx = '0', dy = '0') =>
-  "zoompan=z='" + z + "':x='iw/2-(iw/zoom/2)+" + dx + "':y='ih/2-(ih/zoom/2)+" + dy + "':d=1:s=" + w + 'x' + h + ':fps=30'
+  'scale=' + w * 2 + ':' + h * 2 + ":flags=bicubic,zoompan=z='" + z + "':x='iw/2-(iw/zoom/2)+" + dx + "':y='ih/2-(ih/zoom/2)+" + dy + "':d=1:s=" + w + 'x' + h + ':fps=30'
 
 export const FX_LIST: FxDef[] = [
   { id: 'none', label: 'Ninguno', css: () => '', ff: '' },
