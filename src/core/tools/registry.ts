@@ -12,6 +12,7 @@ import { audioExtractorTool } from '../../tools/audio-extractor'
 import { audioTrimmerTool } from '../../tools/audio-trimmer'
 import { audioConverterTool } from '../../tools/audio-converter'
 import { videoEditorTool } from '../../tools/video-editor'
+import { videoGifTool } from '../../tools/video-gif'
 
 export const tools: ToolDefinition[] = [
   videoCompressorTool,
@@ -26,6 +27,7 @@ export const tools: ToolDefinition[] = [
   audioExtractorTool,
   audioTrimmerTool,
   audioConverterTool,
+  videoGifTool,
   videoEditorTool,
 ]
 
