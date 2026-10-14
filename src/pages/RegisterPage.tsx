@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { signUp } from '../core/auth/authApi'
 import { useAuth } from '../core/auth/useAuth'
+import { Field, StrengthMeter } from '../components/AuthParts'
 
 const MIN_PASSWORD = 8
 
@@ -9,7 +10,6 @@ export default function RegisterPage() {
   const { session, loading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState(false)
@@ -23,10 +23,6 @@ export default function RegisterPage() {
       setError('La contraseña debe tener al menos ' + MIN_PASSWORD + ' caracteres.')
       return
     }
-    if (password !== confirm) {
-      setError('Las contraseñas no coinciden.')
-      return
-    }
     setBusy(true)
     const err = await signUp(email.trim(), password)
     setBusy(false)
@@ -36,41 +32,41 @@ export default function RegisterPage() {
 
   if (sent) {
     return (
-      <section className="wrap auth-page">
-        <h1>Revisa tu correo</h1>
-        <p className="form-ok">
-          Si el correo es válido, te enviamos un enlace para confirmar tu cuenta. Después podrás iniciar sesión.
-        </p>
-        <div className="auth-links">
-          <Link to="/login">Ir a iniciar sesión</Link>
+      <section className="au">
+        <div className="au-card">
+          <div className="au-logo"><img src="/logo.svg" alt="" width={44} height={44} /></div>
+          <h1>Revisa tu correo</h1>
+          <p className="au-ok">
+            Si el correo es válido, te enviamos un enlace para confirmar tu cuenta. Después podrás iniciar sesión.
+          </p>
+          <div className="au-links"><Link to="/login">Ir a iniciar sesión</Link></div>
         </div>
       </section>
     )
   }
 
   return (
-    <section className="wrap auth-page">
-      <h1>Crear cuenta</h1>
-      <form className="auth-form" onSubmit={handleSubmit}>
-        <label>
-          Correo electrónico
-          <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        </label>
-        <label>
-          Contraseña
-          <input type="password" autoComplete="new-password" required minLength={MIN_PASSWORD} value={password} onChange={(e) => setPassword(e.target.value)} />
-        </label>
-        <label>
-          Repite la contraseña
-          <input type="password" autoComplete="new-password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-        </label>
-        {error && <p className="form-error" role="alert">{error}</p>}
-        <button className="btn btn-primary" type="submit" disabled={busy}>
-          {busy ? 'Creando cuenta...' : 'Crear cuenta'}
-        </button>
-      </form>
-      <div className="auth-links">
-        <p>¿Ya tienes cuenta? <Link to="/login">Iniciar sesión</Link></p>
+    <section className="au">
+      <div className="au-card">
+        <div className="au-logo"><img src="/logo.svg" alt="" width={44} height={44} /></div>
+        <h1>Crea tu cuenta</h1>
+        <p className="au-sub">Usa tu correo y una contraseña para empezar. Es gratis.</p>
+        <form onSubmit={handleSubmit}>
+          <Field label="Correo electrónico" icon="mail" type="email" autoComplete="email" required
+            placeholder="tu@correo.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Field label="Contraseña" icon="lock" password autoComplete="new-password" required minLength={MIN_PASSWORD}
+            placeholder="Crea una contraseña" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <StrengthMeter password={password} />
+          {error && <p className="au-error" role="alert">{error}</p>}
+          <button className="au-btn" type="submit" disabled={busy}>
+            {busy ? 'Creando cuenta...' : 'Crear cuenta'}
+          </button>
+        </form>
+        <div className="au-links">
+          <span>¿Ya tienes cuenta?</span>
+          <Link to="/login">Iniciar sesión</Link>
+        </div>
+        <p className="au-foot">Tus archivos se procesan en tu dispositivo.</p>
       </div>
     </section>
   )

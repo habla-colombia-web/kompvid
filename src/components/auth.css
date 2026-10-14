@@ -1,0 +1,35 @@
+.au{width:100%;min-height:calc(100vh - 68px);display:grid;place-items:center;padding:40px clamp(16px,4vw,64px);
+  background:radial-gradient(900px 420px at 50% -10%,rgba(214,59,255,.10),transparent 70%),
+  radial-gradient(700px 380px at 90% 10%,rgba(47,224,214,.12),transparent 70%)}
+.au *{box-sizing:border-box}
+.au-card{width:100%;max-width:440px;padding:32px 28px;background:#fff;border:1px solid #e1e4f0;border-radius:20px;
+  box-shadow:0 18px 50px rgba(10,0,51,.10)}
+.au-logo{display:flex;justify-content:center;margin-bottom:14px}
+.au-card h1{margin:0 0 8px;text-align:center;font-size:1.7rem;color:#0a0030}
+.au-sub{margin:0 0 22px;text-align:center;color:#5b5b7a;font-size:.95rem}
+.au-field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.au-field label{color:#5b5b7a;font-size:.85rem;font-weight:600}
+.au-input{position:relative;display:flex;align-items:center}
+.au-ico{position:absolute;left:12px;color:#8a8aa8;pointer-events:none}
+.au-input input{width:100%;padding:12px 44px 12px 40px;font:inherit;font-size:.95rem;color:#0a0030;background:#fff;
+  border:1px solid #cfd3e6;border-radius:12px}
+.au-input input:focus-visible{outline:3px solid #2fe0d6;outline-offset:1px;border-color:#6d3df0}
+.au-eye{position:absolute;right:6px;width:36px;height:36px;display:grid;place-items:center;border:0;background:none;
+  color:#5b5b7a;cursor:pointer;border-radius:8px}
+.au-eye:hover{background:#f1f1f5}
+.au-eye:focus-visible{outline:3px solid #2fe0d6}
+.au-btn{width:100%;margin-top:6px;padding:14px;border:0;border-radius:12px;background:#0a0030;color:#fff;font:inherit;
+  font-weight:700;cursor:pointer}
+.au-btn:hover{background:#1d0a63}
+.au-btn[disabled]{opacity:.6;cursor:not-allowed}
+.au-btn:focus-visible{outline:3px solid #2fe0d6;outline-offset:3px}
+.au-error{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#fdecec;color:#b3261e;font-size:.9rem}
+.au-ok{margin:0 0 12px;padding:12px;border-radius:10px;background:#d9f7ec;color:#0b7a55;font-size:.95rem}
+.au-links{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;font-size:.92rem}
+.au-links a{color:#6d3df0;font-weight:600;text-decoration:none}
+.au-links a:hover{text-decoration:underline}
+.au-meter{height:6px;margin:2px 0 6px;border-radius:999px;background:#e8e9f4;overflow:hidden}
+.au-meter span{display:block;height:100%;border-radius:999px;transition:width .2s,background .2s}
+.au-hint{margin:0 0 12px;color:#5b5b7a;font-size:.8rem}
+.au-foot{margin:18px 0 0;text-align:center;color:#8a8aa8;font-size:.8rem}
+@media (max-width:480px){.au-card{padding:24px 18px}}
