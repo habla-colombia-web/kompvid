@@ -18,7 +18,7 @@ export const PLANS = {
     name: 'Kompvid Pro',
     currency: 'USD',
     priceMonthly: 9.99,
-    priceYearly: 39.99,
+    priceYearly: 99.99,
     maxFileMB: 500 as number | null,
     dailyOperations: null as number | null,
   },
