@@ -589,10 +589,10 @@ export default function VideoEditorPage() {
   async function generateCaptions() {
     setNotice(null)
     if (capBusy) return
-    if (project.vclips.length === 0) { setNotice('Agrega un video primero.'); return }
+    if (project.vclips.length === 0 && project.aclips.length === 0) { setNotice('Agrega un video o una voz primero.'); return }
     setCapBusy(true)
     try {
-      const clips = await buildCaptions(project.vclips, mediaMap, (m) => setNotice(m))
+      const clips = await buildCaptions(project.vclips, mediaMap, (m) => setNotice(m), project.aclips)
       if (clips.length === 0) { setNotice('No se detecto voz en el video.'); return }
       commit((p) => ({ ...p, texts: [...p.texts.filter((x) => !x.id.startsWith('sub-')), ...clips] }))
       setNotice('Subtitulos listos: ' + clips.length + ' lineas. Puedes editarlas como cualquier texto.')
@@ -654,6 +654,24 @@ export default function VideoEditorPage() {
   }
 
   function patchT(id: string, patch: Partial<TextClip>) {
+    const src = project.texts.find((x) => x.id === id)
+    if (src?.captionGroup) {
+      const keys: (keyof TextClip)[] = ['size', 'color', 'bg', 'boxColor', 'radius', 'stroke', 'strokeColor', 'shadowColor', 'font']
+      const shared: Record<string, unknown> = {}
+      for (const k of keys) if (k in patch) shared[k] = patch[k]
+      if (typeof shared.size === 'number') shared.size = Math.min(30, Math.max(2, shared.size))
+      if (Object.keys(shared).length > 0) {
+        const g = src.captionGroup
+        commit((p) => ({
+          ...p,
+          texts: p.texts.map((c) => (c.captionGroup === g && c.id !== id ? ({ ...c, ...shared } as TextClip) : c)),
+        }))
+      }
+    }
+    patchTOne(id, patch)
+  }
+
+  function patchTOne(id: string, patch: Partial<TextClip>) {
     commit((p) => ({
       ...p,
       texts: p.texts.map((c) => {

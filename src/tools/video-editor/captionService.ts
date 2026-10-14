@@ -1,6 +1,6 @@
 import { extractAudio } from './audioService'
 import { TEXT_STYLES, clipDuration, uid, videoStarts } from './types'
-import type { MediaItem, TextClip, VClip } from './types'
+import type { AClip, MediaItem, TextClip, VClip } from './types'
 
 type Seg = { s: number; e: number; text: string }
 const cache = new Map<string, Seg[]>()
@@ -102,30 +102,30 @@ export async function buildCaptions(
   vclips: VClip[],
   mediaMap: Map<string, MediaItem>,
   onStatus: (s: string) => void,
+  aclips: AClip[] = [],
 ): Promise<TextClip[]> {
   const st = videoStarts(vclips)
   const sd = TEXT_STYLES.find((x) => x.id === 'subtitulo')
+  const group = 'cap-' + uid()
   const out: TextClip[] = []
   let seen = 0
   let first = ''
-  for (let i = 0; i < vclips.length; i++) {
-    const c = vclips[i]
-    const m = mediaMap.get(c.mediaId)
-    if (!m || m.kind !== 'video') continue
-    const segs = await transcribe(m, onStatus)
+
+  const addLines = (segs: Seg[], base: number, inSec: number, outSec: number, maxDur: number) => {
     seen += segs.length
     if (!first && segs[0]) {
-      first = 'frase ' + segs[0].s.toFixed(1) + '-' + segs[0].e.toFixed(1) + ' s, clip ' + c.inSec.toFixed(1) + '-' + c.outSec.toFixed(1) + ' s'
+      first = 'frase ' + segs[0].s.toFixed(1) + '-' + segs[0].e.toFixed(1) + ' s, clip ' + inSec.toFixed(1) + '-' + outSec.toFixed(1) + ' s'
     }
     for (const seg of segs.flatMap(splitLines)) {
-      const s = Math.max(seg.s, c.inSec)
-      const e = Math.min(seg.e, c.outSec)
+      const s = Math.max(seg.s, inSec)
+      const e = Math.min(seg.e, outSec)
       if (e - s < 0.2) continue
       out.push({
         id: 'sub-' + uid(),
+        captionGroup: group,
         text: seg.text,
-        start: st[i] + (s - c.inSec),
-        duration: Math.min(e - s, clipDuration(c)),
+        start: base + (s - inSec),
+        duration: Math.min(e - s, maxDur),
         size: sd?.size ?? 5,
         color: sd?.color ?? '#ffffff',
         bg: sd?.bg ?? false,
@@ -136,6 +136,32 @@ export async function buildCaptions(
       })
     }
   }
+
+  for (let i = 0; i < vclips.length; i++) {
+    const c = vclips[i]
+    const m = mediaMap.get(c.mediaId)
+    if (!m || m.kind !== 'video') continue
+    let segs: Seg[]
+    try {
+      segs = await transcribe(m, onStatus)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      // Video mudo: si hay clips de audio (por ejemplo Texto a voz), se usan esos.
+      if (aclips.length > 0 && /silencio|no tiene audio|FFMPEG_EXIT/.test(msg)) continue
+      throw err
+    }
+    addLines(segs, st[i], c.inSec, c.outSec, clipDuration(c))
+  }
+
+  if (out.length === 0) {
+    for (const a of aclips) {
+      const m = mediaMap.get(a.mediaId)
+      if (!m) continue
+      const segs = await transcribe(m, onStatus)
+      addLines(segs, a.start, a.inSec, a.outSec, a.outSec - a.inSec)
+    }
+  }
+
   if (out.length === 0 && seen > 0) {
     throw new Error('Whisper devolvio ' + seen + ' frases pero ninguna cae dentro del clip (' + first + ').')
   }

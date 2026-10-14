@@ -85,6 +85,7 @@ export interface TextClip {
   strokeColor?: string
   shadowColor?: string
   font?: string
+  captionGroup?: string
   x: number
   y: number
 }
