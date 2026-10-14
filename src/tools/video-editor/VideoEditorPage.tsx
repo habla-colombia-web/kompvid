@@ -4,7 +4,7 @@ import './editor.css'
 import { PLANS } from '../../config/product'
 import { usePlan } from '../../core/billing/usePlan'
 import TtsPanel from './TtsPanel'
-import { buildCaptions } from './captionService'
+import { buildCaptions, type CapLang } from './captionService'
 import { consumeUsage } from '../../core/usage/consumeUsage'
 import { cancelCompression, loadEngine } from '../video-compressor/ffmpegService'
 import EditorChrome from '../../components/EditorChrome'
@@ -275,6 +275,7 @@ export default function VideoEditorPage() {
   const [importError, setImportError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
   const [capBusy, setCapBusy] = useState(false)
+  const [capLang, setCapLang] = useState<CapLang>('spanish')
   const [bigPreview, setBigPreview] = useState(false)
   useEffect(() => {
     if (!bigPreview) return
@@ -599,7 +600,7 @@ export default function VideoEditorPage() {
     if (project.vclips.length === 0 && project.aclips.length === 0) { setNotice('Agrega un video o una voz primero.'); return }
     setCapBusy(true)
     try {
-      const clips = await buildCaptions(project.vclips, mediaMap, (m) => setNotice(m), project.aclips)
+      const clips = await buildCaptions(project.vclips, mediaMap, (m) => setNotice(m), project.aclips, capLang)
       if (clips.length === 0) { setNotice('No se detecto voz en el video.'); return }
       commit((p) => ({ ...p, texts: [...p.texts.filter((x) => !x.id.startsWith('sub-')), ...clips] }))
       setNotice('Subtitulos listos: ' + clips.length + ' lineas. Puedes editarlas como cualquier texto.')
@@ -1655,7 +1656,7 @@ export default function VideoEditorPage() {
                 <h2>Texto</h2>
                 <button type="button" className="ed-btn ed-side-act" onClick={() => addText()}><Ico n="text" /> Agregar texto</button>
                 <p className="ed-empty">Arrastra el texto en el visor o en la linea de tiempo.</p>
-                <button type="button" className="ed-btn ed-side-act" disabled={capBusy} onClick={() => void generateCaptions()}><Ico n="text" /> {capBusy ? 'Generando automaticamente...' : 'Generar automaticamente'}</button>
+                <select className="ed-btn" value={capLang} onChange={(e) => setCapLang(e.target.value as CapLang)} disabled={capBusy} aria-label="Idioma de los subtitulos"><option value="spanish">Espa&ntilde;ol</option><option value="english">English</option></select><button type="button" className="ed-btn ed-side-act" disabled={capBusy} onClick={() => void generateCaptions()}><Ico n="text" /> {capBusy ? 'Generando automaticamente...' : 'Generar automaticamente'}</button>
                 {(['styles', 'titles'] as const).map((g) => (
                   <div key={g}>
                     <h3 className="ed-tr-h">{g === 'styles' ? 'Estilos de texto' : 'Titulos'}</h3>

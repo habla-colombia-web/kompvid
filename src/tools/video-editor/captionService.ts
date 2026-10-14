@@ -3,6 +3,7 @@ import { TEXT_STYLES, clipDuration, uid, videoStarts } from './types'
 import type { AClip, MediaItem, TextClip, VClip } from './types'
 
 type Seg = { s: number; e: number; text: string }
+export type CapLang = 'spanish' | 'english'
 const cache = new Map<string, Seg[]>()
 let asrPromise: Promise<any> | null = null
 
@@ -45,8 +46,9 @@ async function decode16k(file: File): Promise<Float32Array> {
   }
 }
 
-async function transcribe(m: MediaItem, onStatus: (s: string) => void): Promise<Seg[]> {
-  const hit = cache.get(m.id)
+async function transcribe(m: MediaItem, onStatus: (s: string) => void, lang: CapLang): Promise<Seg[]> {
+  const key = m.id + ':' + lang
+  const hit = cache.get(key)
   if (hit) return hit
   onStatus('Extrayendo el audio de ' + m.name + '...')
   const audio = await decode16k(await extractAudio(m))
@@ -61,7 +63,7 @@ async function transcribe(m: MediaItem, onStatus: (s: string) => void): Promise<
   const asr = await loadAsr(onStatus)
   onStatus('Transcribiendo (' + info + ')...')
   const out = await asr(audio, {
-    language: 'spanish',
+    language: lang,
     task: 'transcribe',
     return_timestamps: true,
     chunk_length_s: 30,
@@ -77,7 +79,7 @@ async function transcribe(m: MediaItem, onStatus: (s: string) => void): Promise<
   if (segs.length === 0) {
     throw new Error('Whisper no devolvio texto (' + info + '). Respuesta: ' + JSON.stringify(out).slice(0, 200))
   }
-  cache.set(m.id, segs)
+  cache.set(key, segs)
   return segs
 }
 
@@ -103,6 +105,7 @@ export async function buildCaptions(
   mediaMap: Map<string, MediaItem>,
   onStatus: (s: string) => void,
   aclips: AClip[] = [],
+  lang: CapLang = 'spanish',
 ): Promise<TextClip[]> {
   const st = videoStarts(vclips)
   const sd = TEXT_STYLES.find((x) => x.id === 'subtitulo')
@@ -143,7 +146,7 @@ export async function buildCaptions(
     if (!m || m.kind !== 'video') continue
     let segs: Seg[]
     try {
-      segs = await transcribe(m, onStatus)
+      segs = await transcribe(m, onStatus, lang)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
       // Video mudo: si hay clips de audio (por ejemplo Texto a voz), se usan esos.
@@ -157,7 +160,7 @@ export async function buildCaptions(
     for (const a of aclips) {
       const m = mediaMap.get(a.mediaId)
       if (!m) continue
-      const segs = await transcribe(m, onStatus)
+      const segs = await transcribe(m, onStatus, lang)
       addLines(segs, a.start, a.inSec, a.outSec, a.outSec - a.inSec)
     }
   }

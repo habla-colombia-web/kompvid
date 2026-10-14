@@ -6,6 +6,9 @@ export const VOICES = [
   { id: 'es_ES-davefx-medium', label: 'Español de España (Dave)' },
   { id: 'es_MX-ald-medium', label: 'Español de México (Ald)' },
   { id: 'es_MX-claude-high', label: 'Español de México (Claude, alta calidad)' },
+  { id: 'en_US-amy-medium', label: 'English US (Amy, female)' },
+  { id: 'en_US-ryan-medium', label: 'English US (Ryan, male)' },
+  { id: 'en_GB-alba-medium', label: 'English UK (Alba, female)' },
 ]
 
 let session: TtsSession | null = null
