@@ -4,6 +4,8 @@ import { PRODUCT } from '../config/product'
 import { SOCIAL } from '../config/social'
 import { useAuth } from '../core/auth/useAuth'
 import { TOOL_MENUS } from './toolGroups'
+import LanguageSelect from './LanguageSelect'
+import { useLang } from '../i18n/LanguageContext'
 import './footer.css'
 
 const YEAR = new Date().getFullYear()
@@ -22,21 +24,9 @@ function SocialIcon({ label, svg }: { label: string; svg: ReactNode }) {
   )
 }
 
-function ColombiaFlag() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true" className="sf-flag">
-      <defs><clipPath id="co-clip"><circle cx="11" cy="11" r="11" /></clipPath></defs>
-      <g clipPath="url(#co-clip)">
-        <rect width="22" height="11" y="0" fill="#FCD116" />
-        <rect width="22" height="5.5" y="11" fill="#003893" />
-        <rect width="22" height="5.5" y="16.5" fill="#CE1126" />
-      </g>
-    </svg>
-  )
-}
-
 export default function SiteFooter() {
   const { session, loading } = useAuth()
+  const i18n = useLang()
 
   return (
     <footer className="site-footer">
@@ -61,7 +51,7 @@ export default function SiteFooter() {
             </div>
 
             <div className="sf-pills">
-              <span className="sf-pill"><ColombiaFlag />Es</span>
+              <LanguageSelect />
               <span className="sf-pill">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 2v20M17 6.5C16 5 14.2 4.5 12 4.5c-2.8 0-4.5 1.3-4.5 3.2 0 4.8 9.5 2.3 9.5 7.1 0 2-2 3.7-5 3.7-2.4 0-4.4-.8-5.5-2.5" /></svg>
                 USD
@@ -69,18 +59,18 @@ export default function SiteFooter() {
             </div>
 
             <div className="sf-stores">
-              <div className="sf-store"><small>Próximamente en</small><strong>Google Play</strong></div>
-              <div className="sf-store"><small>Próximamente en</small><strong>App Store</strong></div>
+              <div className="sf-store"><small>{i18n.t('footer.soon')}</small><strong>Google Play</strong></div>
+              <div className="sf-store"><small>{i18n.t('footer.soon')}</small><strong>App Store</strong></div>
             </div>
           </div>
 
           <div className="sf-cols">
             {TOOL_MENUS.map((m) => (
               <nav key={m.id} aria-label={m.label}>
-                <h2>{m.label}</h2>
+                <h2>{i18n.t('action.' + m.id)}</h2>
                 {m.items.map((i) => (
                   <Link key={i.id} to={i.route}>
-                    {i.name}
+                    {i18n.tn(i.id, i.name)}
                     {i.pro && <span className="sf-pro">Pro</span>}
                   </Link>
                 ))}
@@ -88,17 +78,17 @@ export default function SiteFooter() {
             ))}
             <nav aria-label={PRODUCT.name}>
               <h2>{PRODUCT.name}</h2>
-              <Link to="/">Inicio</Link>
-              <Link to="/pricing">Precios</Link>
+              <Link to="/">{i18n.t('nav.home')}</Link>
+              <Link to="/pricing">{i18n.t('nav.pricing')}</Link>
               {!loading && session ? (
                 <>
-                  <Link to="/dashboard">Mi panel</Link>
-                  <Link to="/account">Mi cuenta</Link>
+                  <Link to="/dashboard">{i18n.t('nav.dashboard')}</Link>
+                  <Link to="/account">{i18n.t('nav.myAccount')}</Link>
                 </>
               ) : (
                 <>
-                  <Link to="/login">Iniciar sesión</Link>
-                  <Link to="/register">Crear cuenta</Link>
+                  <Link to="/login">{i18n.t('nav.login')}</Link>
+                  <Link to="/register">{i18n.t('nav.register')}</Link>
                 </>
               )}
             </nav>
@@ -107,11 +97,11 @@ export default function SiteFooter() {
 
         <div className="sf-bottom">
           <nav className="sf-legal" aria-label="Legal">
-            <Link to="/terminos">Términos y condiciones</Link>
-            <Link to="/privacidad">Privacidad y cookies</Link>
-            <Link to="/suscripcion">Políticas de suscripción</Link>
+            <Link to="/terminos">{i18n.t('footer.terms')}</Link>
+            <Link to="/privacidad">{i18n.t('footer.privacy')}</Link>
+            <Link to="/suscripcion">{i18n.t('footer.subscription')}</Link>
           </nav>
-          <p>&copy; {YEAR} {PRODUCT.name}. Todos los derechos reservados.</p>
+          <p>&copy; {YEAR} {PRODUCT.name}. {i18n.t('footer.rights')}</p>
         </div>
       </div>
     </footer>

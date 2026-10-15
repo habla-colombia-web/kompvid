@@ -5,6 +5,7 @@ import { useAuth } from '../core/auth/useAuth'
 import { signOut } from '../core/auth/authApi'
 import { getActiveTools } from '../core/tools/registry'
 import StaffLink from '../admin/StaffLink'
+import { useLang } from '../i18n/LanguageContext'
 import './header.css'
 
 type Action = 'compress' | 'convert' | 'edit'
@@ -70,6 +71,7 @@ const MENUS = ACTIONS.map((a) => ({ ...a, groups: groupsFor(a.id) })).filter((m)
 
 export default function SiteHeader() {
   const { session, loading } = useAuth()
+  const i18n = useLang()
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -126,7 +128,7 @@ export default function SiteHeader() {
           className="sh-burger"
           aria-expanded={menuOpen}
           aria-controls="sh-nav"
-          aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+          aria-label={menuOpen ? i18n.t('nav.closeMenu') : i18n.t('nav.openMenu')}
           onClick={() => setMenuOpen((v) => !v)}
         >
           <span /><span /><span />
@@ -143,19 +145,19 @@ export default function SiteHeader() {
                   aria-controls={'sh-menu-' + m.id}
                   onClick={() => setOpenMenu(openMenu === m.id ? null : m.id)}
                 >
-                  {m.label}
+                  {i18n.t('action.' + m.id)}
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
                 </button>
                 {openMenu === m.id && (
                   <div className="sh-mega" id={'sh-menu-' + m.id}>
                     {m.groups.map((g) => (
                       <div className="sh-group" key={g.category}>
-                        <p className="sh-group-title"><CategoryIcon category={g.category} />{g.label}</p>
+                        <p className="sh-group-title"><CategoryIcon category={g.category} />{i18n.t('cat.' + g.category)}</p>
                         {g.items.map((i) => (
                           <Link key={i.id} className="sh-opt" to={i.route} onClick={closeAll}>
                             <span className="sh-opt-text">
-                              <span className="sh-opt-name">{i.name}</span>
-                              {i.description && <span className="sh-opt-desc">{i.description}</span>}
+                              <span className="sh-opt-name">{i18n.tn(i.id, i.name)}</span>
+                              {i.description && <span className="sh-opt-desc">{i18n.td(i.id, i.description)}</span>}
                             </span>
                             {i.pro && <span className="sh-pro">Pro</span>}
                           </Link>
@@ -166,22 +168,22 @@ export default function SiteHeader() {
                 )}
               </div>
             ))}
-            <Link className="sh-link" to="/pricing">Precios</Link>
+            <Link className="sh-link" to="/pricing">{i18n.t('nav.pricing')}</Link>
             <StaffLink className="sh-link" />
           </div>
 
           <div className="sh-actions">
             {!loading && session && (
               <>
-                <Link className="sh-btn" to="/dashboard">Mi panel</Link>
-                <Link className="sh-btn" to="/account">Cuenta</Link>
-                <button type="button" className="sh-btn" onClick={handleSignOut}>Cerrar sesión</button>
+                <Link className="sh-btn" to="/dashboard">{i18n.t('nav.dashboard')}</Link>
+                <Link className="sh-btn" to="/account">{i18n.t('nav.account')}</Link>
+                <button type="button" className="sh-btn" onClick={handleSignOut}>{i18n.t('nav.logout')}</button>
               </>
             )}
             {!loading && !session && (
               <>
-                <Link className="sh-btn" to="/login">Iniciar sesión</Link>
-                <Link className="sh-btn sh-btn-primary" to="/register">Crear cuenta</Link>
+                <Link className="sh-btn" to="/login">{i18n.t('nav.login')}</Link>
+                <Link className="sh-btn sh-btn-primary" to="/register">{i18n.t('nav.register')}</Link>
               </>
             )}
           </div>
