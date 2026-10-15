@@ -71,7 +71,6 @@ export default function SiteFooter() {
                 {m.items.map((i) => (
                   <Link key={i.id} to={i.route}>
                     {i18n.tn(i.id, i.name)}
-                    {i.pro && <span className="sf-pro">Pro</span>}
                   </Link>
                 ))}
               </nav>
