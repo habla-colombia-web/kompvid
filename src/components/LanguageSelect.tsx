@@ -5,11 +5,10 @@ function Flag({ code }: { code: string }) {
   if (code === 'es') {
     return (
       <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
-        <defs><clipPath id="ls-co"><circle cx="11" cy="11" r="11" /></clipPath></defs>
-        <g clipPath="url(#ls-co)">
-          <rect width="22" height="11" y="0" fill="#FCD116" />
-          <rect width="22" height="5.5" y="11" fill="#003893" />
-          <rect width="22" height="5.5" y="16.5" fill="#CE1126" />
+        <defs><clipPath id="ls-es"><circle cx="11" cy="11" r="11" /></clipPath></defs>
+        <g clipPath="url(#ls-es)">
+          <rect width="22" height="22" fill="#AA151B" />
+          <rect width="22" height="11" y="5.5" fill="#F1BF00" />
         </g>
       </svg>
     )
