@@ -6,7 +6,7 @@
 .sh-nav{flex:1;display:flex;align-items:center;justify-content:space-between;gap:24px}
 .sh-links{display:flex;align-items:center;gap:28px;margin-left:16px}
 .sh-item{position:relative}
-.sh-link{color:#0a0030;text-decoration:none;font:inherit;font-size:.98rem;background:none;border:0;padding:6px 0;cursor:pointer;
+.sh-link{color:#0a0030;text-decoration:none;font:inherit;font-size:1.06rem;font-weight:600;background:none;border:0;padding:6px 0;cursor:pointer;
   display:inline-flex;align-items:center;gap:6px}
 .sh-link:hover,.sh-link:focus-visible,.sh-trigger.is-open{color:#6d3df0}
 .sh-trigger svg{transition:transform .15s}
