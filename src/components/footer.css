@@ -22,9 +22,9 @@ footer.site-footer *{box-sizing:border-box}
 .sf-cols a{color:#e4e0f7;text-decoration:none;font-size:.98rem}
 .sf-cols a:hover,.sf-cols a:focus-visible{color:#fff;text-decoration:underline}
 .sf-pro{margin-left:8px;padding:1px 8px;border-radius:999px;background:rgba(255,255,255,.16);color:#fff;font-size:.68rem;font-weight:700;vertical-align:middle}
-.sf-bottom{padding-top:20px;border-top:1px solid rgba(255,255,255,.14);font-size:.88rem;color:#9d97c9}
+.sf-bottom{text-align:center;padding-top:20px;border-top:1px solid rgba(255,255,255,.14);font-size:.88rem;color:#9d97c9}
 .sf-bottom p{margin:0}
-.sf-legal{display:flex;flex-wrap:wrap;gap:8px 22px;margin:0 0 14px}
+.sf-legal{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 22px;margin:0 0 14px}
 .sf-legal a{color:#c9c4ea;text-decoration:none;font-size:.88rem}
 .sf-legal a:hover,.sf-legal a:focus-visible{color:#fff;text-decoration:underline}
 @media (max-width:1100px){
